@@ -164,6 +164,138 @@ df_flights2['sched_dep_time_minute'] = df_flights2['dep_time'].str[2:]
 df_flights2
 
 
+# 시각화 라이브러리리
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# 출발 공항 갯수
+df_flights2['origin'].unique() # 3개 'EWR', 'LGA', 'JFK'
+df_flights2['origin'].value_counts() # EWR:114269 / LGA:99920 / JFK:103763  
+# 도착 공항 갯수
+len(df_flights2['dest'].unique()) # 104개
+dest_unique = df_flights2['dest'].value_counts(()) # 104개
+dest_unique = dest_unique.reset_index()
+sns.barplot(data=dest_unique, x='dest', y='count', color='skyblue', label='Departure Delay')
+plt.title('dest')
+plt.ylabel('count')
+plt.legend()
+plt.show()
+# 뉴욕에서 뉴욕은 없음
+df_flights2['dest'].isin(['EWR', 'LGA', 'JFK']).sum()
+
+# 월별 항공편 합계 
+
+# 월 별 항공편 합계 시각화 -- 비슷비슷함 2월만 살짝 더 낮음 + 12월까지 데이터임임
+sns.countplot(x=df_flights2['month'])
+plt.title('montly sum')
+plt.show()
+
+# 데이터 정렬 - head(),tail() 찍었을때 1월,9월이라서 정렬되어 있는줄 알았지만 아님
+df_flights2.sort_values(['month','day'],inplace=True)
+
+# 월 별 출발 지연시간 합계
+delay_sum = df_flights2.groupby(['month'],as_index=False)[['dep_delay','arr_delay']].sum()
+delay_mean = df_flights2.groupby(['month'],as_index=False)[['dep_delay','arr_delay']].mean()
+
+# 월 별 출발 지연시간 총합 시각화 
+# -- 6월, 7월, 12월 지연시간이 확실히 높음
+# -- 9월 , 10월, 11월 지연시간이 확실히 낮음
+plt.figure(figsize=(10, 6))
+sns.barplot(data=delay_sum, x='month', y='dep_delay', color='skyblue', label='Departure Delay')
+plt.title('Monthly Sum Dep Delay Time')
+plt.ylabel('Delay Time (minutes)')
+plt.legend()
+plt.show()
+# 월 별 출발 지연시간 평균 시각화 
+plt.figure(figsize=(10, 6))
+sns.barplot(data=delay_mean, x='month', y='dep_delay', color='skyblue', label='Departure Delay')
+plt.title('Monthly Mean Dep Delay Time')
+plt.ylabel('Delay Time (minutes)')
+plt.legend()
+plt.show()
+
+# 월 별 도착 지연시간 합계 시각화
+# -- 9월,10월,11월은 오히려 음수가 나옴 
+# -- 마찬가지로 6월, 7월 12월이 가장 높음
+sns.barplot(data=delay_sum, x='month', y='arr_delay', color='orange', alpha=0.7, label='Arrival Delay')
+plt.title('Monthly Sum Arr Delay Time')
+plt.ylabel('Delay Time (minutes)')
+plt.legend()
+plt.show()
+# 월 별 도착 지연시간 평균 시각화 
+# -- 9월은 평균적으로 5분 먼저 도착
+plt.figure(figsize=(10, 6))
+sns.barplot(data=delay_mean, x='month', y='arr_delay', color='orange', label='Arrival Delay')
+plt.title('Monthly Mean Arr Delay Time')
+plt.ylabel('Delay Time (minutes)')
+plt.legend()
+plt.show()
+# 9월 도착 지연시간이 이상해서 따로 확인
+# df_sep = 9월 항공편 데이터
+df_sep = df_flights2[df_flights2['month'] == 9] # September
+# 인덱스 초기화화
+df_sep.reset_index(drop=True,inplace=True)
+df_sep # 26539개
+(df_sep['arr_delay']<0).sum() # 19616 -- 거의 3분의2가 일찍 도착함
+# arr_delay에 대한 히스토그렘 
+sns.histplot(df_sep['arr_delay'], bins=100, kde=True)
+plt.title('arr_delay')
+plt.show()
+min(df_sep['arr_delay']) # 예상시간보다 68분 먼저 도착한 항공기까지 있음
+
+# 1년 동안 항공사별 총 비행량 
+# -- 4개의 주축 항공사가 있음 B6, DL, EV, UA
+len(df_flights2['carrier'].unique()) # 16개의 항공사
+df_carrier = df_flights2.groupby(['carrier'],as_index=False)['year'].count()
+df_carrier
+plt.figure(figsize=(10, 6))
+sns.barplot(data=df_carrier, x='carrier', y='year', color='skyblue', label='year sum carrier')
+plt.title('year sum carrier')
+plt.ylabel('counts')
+plt.legend() # 범례 표시 유무
+plt.show()
+
+# 항공사 별 출발, 도착 지연시간 평균
+# -- 해석하기가 애매함
+# -- 항공사마다 특정 나라를 자주 가는 특징이 있는지 살펴봐야할듯
+# -- 또는 항공사마다 출발 공항이 정해져 있는지 확인해야함
+df_carrier_delay = df_flights2.groupby('carrier',as_index=False)[['dep_delay','arr_delay']].mean()
+df_carrier_delay
+plt.figure(figsize=(10, 6))
+sns.barplot(data=df_carrier_delay, x='carrier', y='dep_delay', color='skyblue', label='dep_delay')
+sns.barplot(data=df_carrier_delay, x='carrier', y='arr_delay', color='orange', label='arr_delay')
+plt.title('mean carrier')
+plt.ylabel('mean')
+plt.legend() # 범례 표시 유무
+plt.show()
+
+# 공항별 운행량
+df_flights2['origin'].value_counts() # EWR:114269 / LGA:99920 / JFK:103763  
+# 공항별 지연시간 평균
+# ewr이 일을 좀 못하나 # 뒤에서 확인 결과 그런건 아닌듯
+df_origin = df_flights2.groupby('origin',as_index=False)[['dep_delay','arr_delay']].mean()
+df_origin
+plt.figure(figsize=(10, 6))
+sns.barplot(data=df_origin, x='origin', y='dep_delay', color='skyblue', label='dep_delay')
+sns.barplot(data=df_origin, x='origin', y='arr_delay', color='orange', label='arr_delay')
+plt.title('mean origin')
+plt.ylabel('mean')
+plt.legend() # 범례 표시 유무
+plt.show()
+
+# ewr에 가장 많은 항공편을 운행한 항공사는? UA:43961, EV:40697 
+# -- 11만개중 8만3천개 2개의 항공사가 대부분
+# 다른 공항도 체크 ㄱㄱ
+df_flights2[df_flights2['origin']=='EWR']['carrier'].value_counts() 
+
+# LGA
+# DL:22625, MQ:15956, AA:14912, US:12511
+df_flights2[df_flights2['origin']=='LGA']['carrier'].value_counts() 
+
+# JFK
+# B6:37791 DL:19869, 9E:13597, AA:13188
+df_flights2[df_flights2['origin']=='JFK']['carrier'].value_counts() 
+
 
 
 
