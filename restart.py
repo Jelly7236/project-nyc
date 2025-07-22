@@ -320,10 +320,11 @@ merged_flights['origin'].value_counts()
 # 궁금증2. 시간대에 차이가 있을까?
 ewa_group =
 
+#
 
-
-
-
+merged_flights[merged_flights['origin']== "JFK"]['manufacturer'].value_counts()
+merged_flights[merged_flights['origin']== "LGA"]['manufacturer'].value_counts()
+merged_flights[merged_flights['origin']== "EWR"]['manufacturer'].value_counts()
 
 
 
