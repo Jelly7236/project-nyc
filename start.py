@@ -183,8 +183,6 @@ plt.show()
 # 뉴욕에서 뉴욕은 없음
 df_flights2['dest'].isin(['EWR', 'LGA', 'JFK']).sum()
 
-# 월별 항공편 합계 
-
 # 월 별 항공편 합계 시각화 -- 비슷비슷함 2월만 살짝 더 낮음 + 12월까지 데이터임임
 sns.countplot(x=df_flights2['month'])
 plt.title('montly sum')
@@ -193,10 +191,10 @@ plt.show()
 # 데이터 정렬 - head(),tail() 찍었을때 1월,9월이라서 정렬되어 있는줄 알았지만 아님
 df_flights2.sort_values(['month','day'],inplace=True)
 
-# 월 별 출발 지연시간 합계
+# 월 별 출발 지연시간 합계 평균 횟수
 delay_sum = df_flights2.groupby(['month'],as_index=False)[['dep_delay','arr_delay']].sum()
 delay_mean = df_flights2.groupby(['month'],as_index=False)[['dep_delay','arr_delay']].mean()
-
+delay_count = df_flights2.groupby(['month'],as_index=False)[['dep_delay','arr_delay']].count()
 # 월 별 출발 지연시간 총합 시각화 
 # -- 6월, 7월, 12월 지연시간이 확실히 높음
 # -- 9월 , 10월, 11월 지연시간이 확실히 낮음
@@ -213,7 +211,13 @@ plt.title('Monthly Mean Dep Delay Time')
 plt.ylabel('Delay Time (minutes)')
 plt.legend()
 plt.show()
-
+# 월 별 출발 지연시간 횟수 시각화
+plt.figure(figsize=(10, 6))
+sns.barplot(data=delay_count, x='month', y='dep_delay', color='skyblue', label='Departure Delay')
+plt.title('Monthly count Dep Delay Time')
+plt.ylabel('counts')
+plt.legend()
+plt.show()
 # 월 별 도착 지연시간 합계 시각화
 # -- 9월,10월,11월은 오히려 음수가 나옴 
 # -- 마찬가지로 6월, 7월 12월이 가장 높음
@@ -260,6 +264,7 @@ plt.show()
 # -- 항공사마다 특정 나라를 자주 가는 특징이 있는지 살펴봐야할듯
 # -- 또는 항공사마다 출발 공항이 정해져 있는지 확인해야함
 df_carrier_delay = df_flights2.groupby('carrier',as_index=False)[['dep_delay','arr_delay']].mean()
+df_carrier_delay = df_flights2.groupby('carrier',as_index=False)[['dep_delay','arr_delay']].mean()
 df_carrier_delay
 plt.figure(figsize=(10, 6))
 sns.barplot(data=df_carrier_delay, x='carrier', y='dep_delay', color='skyblue', label='dep_delay')
@@ -295,6 +300,38 @@ df_flights2[df_flights2['origin']=='LGA']['carrier'].value_counts()
 # JFK
 # B6:37791 DL:19869, 9E:13597, AA:13188
 df_flights2[df_flights2['origin']=='JFK']['carrier'].value_counts() 
+
+df_flights2.columns
+df_planes
+max(df_flights2.groupby('tailnum')['year'].count())
+df_flights
+
+len(df_planes['manufacturer'].unique())
+
+
+df_planes['manufacturer'].value_counts()
+df_boeing = df_planes[df_planes['manufacturer']=='BOEING'].reset_index(drop=True)
+df_boeing['type'].unique()
+df_boeing['engines'].value_counts()
+df_boeing[df_boeing['engines']==4]
+df_flights2[df_flights2['tailnum'] == 'N670US']
+df_boeing['year'].value_counts()
+df_boeing['engine'].value_counts()
+df_boeing['model'].value_counts()
+
+
+
+
+
+# 보잉 엔진을 보유한 상태의 ㅂflights 데이터프레임 생성 
+# 출발 지연 도착 지연 결항
+# year type   
+
+
+
+
+
+
 
 
 
