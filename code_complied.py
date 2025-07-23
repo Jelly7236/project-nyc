@@ -27,6 +27,15 @@ flights_cleaned = flights_cleaned.reset_index(drop=True) # 인덱스 초기화
 flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 flights_delay = flights_delay.reset_index(drop=True)
 flights_delay
+
+flights_cleaned['month_day_time'] = pd.to_datetime({
+    'year': df_flights['year'],
+    'month': df_flights['month'],
+    'day': df_flights['day'],
+    'hour': df_flights['hour'],
+    'minute': df_flights['minute']
+})
+
 # 정리
 # 전체 항공 데이터 = flights_cleanded
 # 15분 이상 출발 지연 데이터 = flights_delay
@@ -56,8 +65,8 @@ summary_big3 = summary_big3.sort_values("total_flights", ascending=False)
 summary_big3 
 
 #################################################################################################
-## EV만의 특징 분석 1. 월별 분석 2. 제조사 분석 3. 
-
+## EV만의 특징 분석 1. 월별 분석 2. 제조사 분석 3. 비행 시간 비교
+###########################################################################################
 # 월별 분석
 UA_total = flights_cleaned[flights_cleaned['carrier']=='UA']
 B6_total = flights_cleaned[flights_cleaned['carrier']=='B6']
@@ -131,52 +140,59 @@ for (label, df), (i, j) in zip(airline_data.items(), positions):
 plt.tight_layout(rect=[0, 0, 1, 0.95])
 plt.show() # 1~6월 지연 비율이 높은 것을 확인할 수 있음
 
+#################################################################################
+# 2. 제조사 분석 >> 좌석수가 적은 것을 알 수 있었고 이를 통해 주로 작은 항공기를 운영중을 확인
+##################################################################################
+# 사용할 carrier만 필터링
+big3 = flights_cleaned[flights_cleaned['carrier'].isin(['UA', 'B6', 'EV'])]
+# 항공사별 제조사 그룹화
+plane_features = (
+    big3
+    .dropna(subset=['manufacturer', 'seats'])
+    .groupby(['carrier', 'manufacturer'])
+    .agg(
+        avg_seats=('seats', 'mean'),
+        avg_engines=('engines', 'mean'),
+        count=('tailnum', 'nunique')
+    )
+    .reset_index()
+)
+print("▶ 항공사별 제조사 분포:")
+print(plane_features)
+# 항공사별 좌석수 평균 확인
+avg_seats = (
+    big3.dropna(subset=['seats'])
+    .groupby('carrier')['seats']
+    .mean()
+    .reset_index()
+    .rename(columns={'seats': 'avg_seats'})
+)
+
+print("\n▶ 항공사별 평균 좌석 수:")
+print(avg_seats)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+##############################################################################
+# 3. 각 항공사 별 단거리 중거리 장거리 파악 >> EV는 작은 비행기를 운행하는 단거리 항공사이다
+###############################################################################
 
 # 1. UA , 57782
-flights_cleaned['carrier']=='UA' # 57782
-
 # distance, air_time 확인
-UA_flight=flights_cleaned.loc[flights_cleaned['carrier']=='UA',['carrier','distance','air_time']]
-
+UA_flight=UA_total[['carrier','distance','air_time']]
 UA_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
 # distance는 내림차순, air_time은 오름차순으로 정렬( 동일한 거리에서 시간이 짧을 수록 비행 good)
-
 UA_flight.describe()
 
 # 2. B6, 54049
-flights_cleaned['carrier']=='B6' # 54049
-
 # distance, air_time 확인
-B6_flight=flights_cleaned.loc[flights_cleaned['carrier']=='B6',['carrier','distance','air_time']]
-
+B6_flight= B6_total[['carrier','distance','air_time']]
 B6_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
-
 B6_flight.describe()
 
 # 3. EV, 51108
-flights_cleaned['carrier']=='EV' # 51108
-
 # distance, air_time 확인
-EV_flight=flights_cleaned.loc[flights_cleaned['carrier']=='EV',['carrier','distance','air_time']]
-
+EV_flight=EV_total[['carrier','distance','air_time']]
 EV_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
-
-
 EV_flight.describe()
 
 '''
@@ -185,6 +201,7 @@ United Airline
 700 mile 이상 3000 mile 미만 -> medium
 3000 mile 이상 -> long
 '''
+
 # 상위 항공사 3개를 합친 새로운 DataFrame 생성
 top3_flights = pd.concat([UA_flight, B6_flight, EV_flight], ignore_index=True)
 
@@ -211,35 +228,29 @@ pivot_flight = pd.pivot_table(
 ).reset_index()
 pivot_flight.columns.name = None
 pivot_flight = pivot_flight[['carrier', 'short', 'medium', 'long']]
-pivot_flight
+pivot_flight 
 
 ######## top3 항공사의 노선거리 분석 끝 ########
 
 
+###########################################################################
+# 지연 원인 분석 1. 기체 회전율이 낮음 2. 장거리 위주의 공항 존재
+#####################################################################
 
-### EV 항공사의 기체 별 회전율 시작 ###
-
-
-# 월,일,시간,분 으로 나눠진 datetime column을 새로 만듦
-df_flights['month_day_time'] = pd.to_datetime({
-    'year': df_flights['year'],
-    'month': df_flights['month'],
-    'day': df_flights['day'],
-    'hour': df_flights['hour'],
-    'minute': df_flights['minute']
-})
+##################################################################
+### 1. 낮은 회전율: EV 항공사의 기체 별 회전율 ###
+#################################################################
 
 # EV 항공사 중에서 tailnum, 출발 시간, 날짜 정보 추출
-ev_schedule = df_flights[df_flights['carrier'] == 'EV'][['tailnum', 'month_day_time']].dropna()
+ev_schedule = EV_total[['tailnum', 'month_day_time']].dropna()
 
 # 1. datetime 형식으로 먼저 변환
 ev_schedule['month_day_time'] = pd.to_datetime(ev_schedule['month_day_time'])
-# 시간순 정렬
-ev_schedule = ev_schedule.sort_values(['tailnum', 'month_day_time'])
-
+# 시간순 정렬   # 수정사항 원래는 앞에 TAILNUM 이 있었는데 이럼 정렬 ㄴㄴ
+ev_schedule = ev_schedule.sort_values(['month_day_time'])
 
 # 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
-
+# diff()
 ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff()
 
 # 값이 NaT인 경우, 
@@ -247,7 +258,6 @@ ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff(
 
 # 간격을 시간(hour) 단위로 변경
 ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
-
 
 # 3. 결과 확인
 ev_schedule['time_gap']
@@ -318,4 +328,141 @@ for i, row in top_planes_with_seats.iterrows():
 plt.tight_layout()
 plt.show()
 
-# 시각화는 좀 더 예뿌게 부탁드립니다 ^_^*
+################################################################
+# 장거리 위주의 공항이 있음
+################################################################
+origin_summary = flights_cleaned.groupby('origin')[['distance', 'air_time']].mean().reset_index()
+origin_summary 
+# jfk 거리가 1222 lga는 872로 평균 거리차이가 있음
+# 시간도 171 , 127로 차이가 있음
+
+# 1. 세 항공사만 필터링
+big3 = flights_cleaned[flights_cleaned['carrier'].isin(['UA', 'B6', 'EV'])]
+
+# 2. origin과 carrier 기준으로 항공편 수 집계
+big3_counts = (
+    big3.groupby(['origin', 'carrier'])
+    .size()
+    .unstack(fill_value=0)  # carrier를 열로, 결측은 0으로 채움
+    .reset_index()
+)  ####### 이 통계자료는 보여주는거는 고려해봐야할듯
+# 원래는 JFK에 UA랑B6가 많고 LGA에는 EV가 가장 많은 것을 보여줄려고했는데
+# JFK공항에 EV 항공편이 너무 적은게 문제임 다른건ㄱㅊ
+
+# 각 공항별 3사의 지연율 확인
+# 15분 이상 지연된 항공편만 필터링
+big3_delay = flights_cleaned[
+    (flights_cleaned['carrier'].isin(selected_carriers)) &
+    (flights_cleaned['dep_delay'] >= 15)
+]
+
+# 결측값 제거 후 평균 출발 지연 시간 계산 (carrier, origin 기준)
+airport_delay = (
+    big3_delay.dropna(subset=['dep_delay'])
+    .groupby(['carrier', 'origin'])['dep_delay']
+    .mean()
+    .reset_index()
+)
+
+# 원하는 carrier 순서로 지정
+carrier_order = ['UA', 'B6', 'EV']
+airport_delay['carrier'] = pd.Categorical(airport_delay['carrier'], categories=carrier_order, ordered=True)
+
+# 공항 이름 붙이기 (origin code -> 공항명)
+airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'name': 'airport_name'})
+airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
+
+# 시각화
+plt.figure(figsize=(10, 6))
+sns.barplot(data=airport_delay, x='origin', y='dep_delay', hue='carrier')
+plt.title('항공사별 출발 공항 기준 평균 출발 지연 시간 (UA, B6, EV)')
+plt.xlabel('출발 공항 코드')
+plt.ylabel('평균 출발 지연 시간 (분)')
+plt.grid(True, axis='y')
+plt.tight_layout()
+plt.show()
+
+
+############################
+# 공항, 항공사별 지연된 항공편 수
+
+# 1. 세 항공사만 필터링
+selected_carriers = ['UA', 'B6', 'EV']
+big3 = flights_cleaned[flights_cleaned['carrier'].isin(selected_carriers)]
+
+# 2. 전체 항공편 수 (carrier + origin 기준)
+total_counts = (
+    big3.groupby(['carrier', 'origin'])
+    .size()
+    .reset_index(name='total_flights')
+)
+
+# 3. 15분 이상 지연된 항공편만 필터링
+big3_delay = big3[big3['dep_delay'] >= 15]
+
+# 4. 지연된 항공편 수 (carrier + origin 기준)
+delay_counts = (
+    big3_delay.groupby(['carrier', 'origin'])
+    .size()
+    .reset_index(name='delay_count')
+)
+
+# 5. 평균 지연 시간 (기존 코드 유지)
+airport_delay = (
+    big3_delay.dropna(subset=['dep_delay'])
+    .groupby(['carrier', 'origin'])['dep_delay']
+    .mean()
+    .reset_index()
+)
+
+# 6. total_flights와 delay_count를 airport_delay에 merge
+airport_delay = pd.merge(airport_delay, total_counts, on=['carrier', 'origin'], how='left')
+airport_delay = pd.merge(airport_delay, delay_counts, on=['carrier', 'origin'], how='left')
+
+# 7. 결측값 처리 및 지연 비율 계산
+airport_delay['delay_count'] = airport_delay['delay_count'].fillna(0)
+airport_delay['delay_ratio'] = airport_delay['delay_count'] / airport_delay['total_flights']
+
+# 8. carrier 순서 정렬
+carrier_order = ['UA', 'B6', 'EV']
+airport_delay['carrier'] = pd.Categorical(airport_delay['carrier'], categories=carrier_order, ordered=True)
+
+# 9. 공항 이름 붙이기 (origin -> 공항명)
+airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'name': 'airport_name'})
+airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
+
+# 10. 시각화
+# 시각화용 폰트 설정
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
+
+# 서브플롯 생성 (1행 2열)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# 1. 평균 지연 시간 시각화
+sns.barplot(
+    data=airport_delay,
+    x='origin', y='dep_delay', hue='carrier',
+    ax=axes[0]
+)
+axes[0].set_title('출발 공항별 항공사 평균 지연 시간')
+axes[0].set_xlabel('출발 공항 코드')
+axes[0].set_ylabel('평균 지연 시간 (분)')
+axes[0].grid(True, axis='y')
+
+# 2. 지연 비율 시각화
+sns.barplot(
+    data=airport_delay,
+    x='origin', y='delay_ratio', hue='carrier',
+    ax=axes[1]
+)
+axes[1].set_title('출발 공항별 항공사 지연 비율 (15분 이상 지연)')
+axes[1].set_xlabel('출발 공항 코드')
+axes[1].set_ylabel('지연 비율')
+axes[1].set_ylim(0, 0.5)
+axes[1].grid(True, axis='y')
+
+# 전체 레이아웃 정리
+plt.tight_layout()
+plt.show()
+
