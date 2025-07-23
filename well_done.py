@@ -22,14 +22,117 @@ flights_cleaned = pd.merge(flights_cleaned,df_planes,on='tailnum',how='left')
 # 시간순으로 날짜 재정렬
 flights_cleaned.sort_values(['month', 'day'], inplace=True)
 flights_cleaned = flights_cleaned.reset_index(drop=True) # 인덱스 초기화
+
+# 15분 이상 지연된 항공편만 따로 데이터 프레임 생성 
+flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
+flights_delay = flights_delay.reset_index(drop=True)
+flights_delay
+# 정리
+# 전체 항공 데이터 = flights_cleanded
+# 15분 이상 출발 지연 데이터 = flights_delay
+
 #################################################################################################
 ## 전체적인 데이터 탐색
 
-# 항공사별 총 항공편 수 계산
-flight_counts = flights_cleaned['carrier'].value_counts().reset_index()
+### 항공사별 비교
+# 각 항공사별 항공편의 총합을 통해 1,2,3 순위 설정
+flight_counts = flights_cleaned['carrier'].value_counts().reset_index() # UA B6 EV
 
-# 상위 3개 항공사의 노선 길이 비교
-top_3_carriers = flight_counts['carrier'].head(3).tolist()
+# 3사의 공항에 따른 지연율
+# 분석 대상 항공사
+selected_carriers = ['UA', 'B6', 'EV']
+flights_cleaned = flights_cleaned[flights_cleaned['carrier'].isin(selected_carriers)]
+
+# 3사 지연율 및 평균 계산 > summary_big3를 통해서 3사 중 EV의 지연율이 특출나게 높은 것을 확인할 수 있음
+summary_big3 = flights_cleaned.groupby('carrier').apply(
+    lambda g: pd.Series({
+        'total_flights': len(g),
+        'delayed_flights': (g['dep_delay'] >= 15).sum(),
+        'delay_rate (%)': round((g['dep_delay'] >= 15).mean() * 100, 2),
+        'avg_delay (min)': round(g[g['dep_delay'] >= 15]['dep_delay'].mean(), 2)
+    })
+).reset_index()
+summary_big3 = summary_big3.sort_values("total_flights", ascending=False)
+summary_big3 
+
+#################################################################################################
+## EV만의 특징 분석 1. 월별 분석 2. 제조사 분석 3. 
+
+# 월별 분석
+UA_total = flights_cleaned[flights_cleaned['carrier']=='UA']
+B6_total = flights_cleaned[flights_cleaned['carrier']=='B6']
+EV_total = flights_cleaned[flights_cleaned['carrier']=='EV']
+
+# 전체 데이터 통계
+total_group = flights_cleaned.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# 전체 결항 데이터 통계 
+delay_group = flights_delay.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# 전체 데이터 통계 데이터 total_group에 월 별 지연 비율 추가
+total_group['delay_ratio'] = delay_group['count'] / total_group['count']
+
+# UA 전체 데이터 통계 
+UA_total_group = UA_total.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# UA 결항 데이터 통계 
+UA_delay = UA_total[UA_total['dep_delay']>15].reset_index(drop=True)
+UA_delay_group = UA_delay.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# UA 전체 데이터 통계 데이터 UA_total_group에 월 별 지연 비율 추가
+UA_total_group['delay_ratio'] = UA_delay_group['count'] / UA_total_group['count']
+
+# B6 전체 데이터 통계 
+B6_total_group = B6_total.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# B6 결항 데이터 통계 
+B6_delay = B6_total[B6_total['dep_delay']>15].reset_index(drop=True)
+B6_delay_group = B6_delay.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# B6 전체 데이터 통계 데이터 B6_total_group에 월 별 지연 비율 추가
+B6_total_group['delay_ratio'] = B6_delay_group['count'] / B6_total_group['count']
+
+# EV 전체 데이터 통계 
+EV_total_group = EV_total.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# EV 결항 데이터 통계 
+EV_delay = EV_total[EV_total['dep_delay']>15].reset_index(drop=True)
+EV_delay_group = EV_delay.groupby('month',as_index=False)['dep_delay'].agg(['count','mean'])
+# EV 전체 데이터 통계 데이터 EV_total_group에 월 별 지연 비율 추가
+EV_total_group['delay_ratio'] = EV_delay_group['count'] / EV_total_group['count']
+
+# 1월~12월 시각화
+# subplot 설정
+fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+fig.suptitle('Monthly Flight Count and Delay Ratio by Airline', fontsize=18)
+
+# 데이터와 라벨 매핑
+airline_data = {
+    'EV': EV_total_group,
+    'B6': B6_total_group,
+    'UA': UA_total_group,
+    'Total': total_group
+}
+
+# subplot 위치 매핑
+positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+# 각 subplot에 그래프 그리기
+for (label, df), (i, j) in zip(airline_data.items(), positions):
+    ax1 = axes[i][j]
+
+    # 막대 그래프
+    sns.barplot(data=df, x='month', y='count', color='skyblue', ax=ax1)
+    ax1.set_ylabel('Flight Count')
+    ax1.set_xlabel('Month')
+    ax1.set_title(f'{label} - Flight Count and Delay Ratio')
+
+    # 선 그래프 (지연 비율)
+    x_coords = ax1.get_xticks()
+    ax2 = ax1.twinx()
+    ax2.plot(x_coords, df['delay_ratio'], color='red', marker='o', label='Delay Ratio')
+    ax2.set_ylabel('Delay Ratio')
+    ax2.legend(loc='upper right')
+
+# 레이아웃 조정
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+plt.show() # 1~6월 지연 비율이 높은 것을 확인할 수 있음
+
+
+
 
 
 
