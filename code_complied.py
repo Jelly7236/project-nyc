@@ -47,6 +47,42 @@ flights_cleaned['month_day_time'] = pd.to_datetime({
 # 정리
 # 전체 항공 데이터 = flights_cleanded
 # 15분 이상 출발 지연 데이터 = flights_delay
+####################################################################3
+#1,2,3등 알수 있는 운항량 그래프 
+
+# 항공사별 운항 수 집계
+carrier_counts = df_flights['carrier'].value_counts().reset_index()
+carrier_counts.columns = ['carrier', 'total_flights']
+
+# 항공사 이름 붙이기
+carrier_counts = carrier_counts.merge(df_airlines, on='carrier', how='left')
+
+# 색상 매핑
+def assign_color(carrier):
+    if carrier == 'EV':
+        return 'red'
+    elif carrier in ['UA', 'B6']:
+        return 'blue'
+    else:
+        return 'gray'
+
+carrier_counts['color'] = carrier_counts['carrier'].apply(assign_color)
+
+# 시각화
+plt.figure(figsize=(14, 7))
+bars = plt.bar(
+    carrier_counts['carrier'],
+    carrier_counts['total_flights'],
+    color=carrier_counts['color']
+)
+
+# 레이블 및 제목
+plt.title('항공사별 연간 운항량', fontsize=16, weight='bold')
+plt.xlabel('항공사 코드')
+plt.ylabel('총 운항편 수')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
 
 #################################################################################################
 ## 전체적인 데이터 탐색
@@ -209,10 +245,10 @@ ax_upper.plot(x, Total_counts, label='Total', marker='o', color=color_dict['Tota
 
 # 점 위/아래 텍스트 표시
 for i in x:
-    ax_lower.text(i, EV_counts[i] - 70, str(EV_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['EV'])     # EV 아래
-    ax_lower.text(i, B6_counts[i] + 50, str(B6_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['B6'])  # B6 위
-    ax_lower.text(i, UA_counts[i] - 70, str(UA_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['UA'])     # UA 아래
-    ax_upper.text(i, Total_counts[i] + 150, str(Total_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['Total'])  # Total 위
+    ax_lower.text(i, EV_counts[i] - 70, str(EV_counts[i]), ha='center', va='top', fontsize=15, color=color_dict['EV'])     # EV 아래
+#    ax_lower.text(i, B6_counts[i] + 50, str(B6_counts[i]), ha='center', va='bottom', fontsize=15, color=color_dict['B6'])  # B6 위
+#   ax_lower.text(i, UA_counts[i] - 70, str(UA_counts[i]), ha='center', va='top', fontsize=15, color=color_dict['UA'])     # UA 아래
+    ax_upper.text(i, Total_counts[i] + 150, str(Total_counts[i]), ha='center', va='bottom', fontsize=15, color=color_dict['Total'])  # Total 위
 
 # Y축 범위
 ax_lower.set_ylim(4000, 5100)
@@ -594,6 +630,57 @@ pivot_flight = pd.pivot_table(
 pivot_flight.columns.name = None
 pivot_flight = pivot_flight[['carrier', 'short', 'medium', 'long']]
 pivot_flight 
+##############################################################3
+# 항공사별 단거리 중거리 장거리 시각화
+#########################################################
+# 거리별 총합을 기준으로 비율 계산
+distance_ratio = pivot_flight.copy()
+total = distance_ratio[['short', 'medium', 'long']].sum(axis=1)
+distance_ratio['short_ratio'] = (distance_ratio['short'] / total * 100).round(2)
+distance_ratio['medium_ratio'] = (distance_ratio['medium'] / total * 100).round(2)
+distance_ratio['long_ratio'] = (distance_ratio['long'] / total * 100).round(2)
+
+# melt해서 long-form으로 변환
+distance_ratio_melted = pd.melt(
+    distance_ratio,
+    id_vars='carrier',
+    value_vars=['short_ratio', 'medium_ratio', 'long_ratio'],
+    var_name='distance_group',
+    value_name='비율'
+)
+
+# distance_group 한글 라벨 정리
+distance_ratio_melted['distance_group'] = distance_ratio_melted['distance_group'].map({
+    'short_ratio': '단거리',
+    'medium_ratio': '중거리',
+    'long_ratio': '장거리'
+})
+
+# 시각화
+plt.figure(figsize=(10, 6))
+ax = sns.barplot(data=distance_ratio_melted, x='carrier', y='비율', hue='distance_group')
+
+# 막대 위에 비율 표시
+for container in ax.containers:
+    for bar in container:
+        height = bar.get_height()
+        if height > 0:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 0.5,
+                f'{height:.1f}%',
+                ha='center',
+                va='bottom',
+                fontsize=9
+            )
+
+plt.title('항공사별 거리 구간별 항공편 비율 (%)', fontsize=15, fontweight='bold')
+plt.xlabel('항공사')
+plt.ylabel('항공편 비율 (%)')
+plt.legend(title='비행 거리 구간')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
 
 ######## top3 항공사의 노선거리 분석 끝 ########
 
