@@ -656,7 +656,9 @@ top_planes_with_seats = pd.merge(
     on='tailnum',
     how='left'
 )
-
+##############################################################
+# EV 비행기 회전율 시각화
+################################################333
 # 색상: 상위 4개는 빨간색, 나머지는 파란색
 colors = ['#d62728' if i < 4 else '#1f77b4' for i in range(len(top_planes_with_seats))]
 
@@ -686,7 +688,9 @@ plt.tight_layout()
 plt.show()
 
 ################################################################################
+
 # UA 기체 회전율
+
 # UA 항공사의 기체 회전율 비교
 ua_schedule = UA_total[['tailnum', 'month_day_time']].dropna()
 
@@ -728,6 +732,10 @@ top_planes_ua_with_seats = pd.merge(
     how='left'
 )
 
+######################################################################################
+# UA 비행기 회전율 시각화
+#############################################################################
+
 plt.figure(figsize=(10, 5))
 barplot = sns.barplot(
     data=top_planes_ua_with_seats,
@@ -758,7 +766,9 @@ for i, row in top_planes_ua_with_seats.iterrows():
 plt.tight_layout()
 plt.show()
 #################################################################################
+
 # B6 기체 회전율
+
 # B6 항공사 중에서 tailnum, 출발 시간, 날짜 정보 추출
 b6_schedule = B6_total[['tailnum', 'month_day_time']].dropna()
 
@@ -798,6 +808,9 @@ top_planes_b6_with_seats = pd.merge(
     on='tailnum',
     how='left'
 )
+################################################################################################
+# B6 기체 회전율 시각화
+##########################################################################################
 
 plt.figure(figsize=(10, 5))
 barplot = sns.barplot(
@@ -848,8 +861,10 @@ def get_color(airport):
         return '#d62728'  # 빨강
     else:
         return '#1f77b4'  # 기본 파랑
+#####################################################################################
 
 # 1. 공항별 평균 거리 시각화
+
 plt.subplot(1, 2, 1)
 colors_dist = origin_summary['origin'].apply(get_color).tolist()
 sns.barplot(data=origin_summary, x='origin', y='distance', palette=colors_dist)
@@ -862,7 +877,10 @@ plt.yticks(fontsize=12)
 for i, val in enumerate(origin_summary['distance']):
     plt.text(i, val + 10, f'{val:.1f}', ha='center', va='bottom', fontsize=12, fontweight='bold')
 
+###########################################################################################
+
 # 2. 공항별 평균 비행 시간 시각화
+
 plt.subplot(1, 2, 2)
 colors_time = origin_summary['origin'].apply(get_color).tolist()
 sns.barplot(data=origin_summary, x='origin', y='air_time', palette=colors_time)
@@ -877,6 +895,8 @@ for i, val in enumerate(origin_summary['air_time']):
 
 plt.tight_layout()
 plt.show()
+
+####################################################################################
 
 # 1. 세 항공사만 필터링
 big3 = flights_cleaned[flights_cleaned['carrier'].isin(['UA', 'B6', 'EV'])]
@@ -960,6 +980,7 @@ airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
 ######################################################################
 ###############################################################################3
 ##################################################################################3
+
 # 각 공항별 항공사 지연 시간 시각화
 # carrier별 색상 딕셔너리 (EV 빨강, 나머지 파랑)
 palette_dict = {
