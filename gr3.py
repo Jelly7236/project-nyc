@@ -139,10 +139,10 @@ ax_upper.plot(x, Total_counts, label='Total', marker='o', color=color_dict['Tota
 
 # 점 위/아래 텍스트 표시
 for i in x:
-    ax_lower.text(i, EV_counts[i] - 70, str(EV_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['EV'])     # EV 아래
-    ax_lower.text(i, B6_counts[i] + 50, str(B6_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['B6'])  # B6 위
-    ax_lower.text(i, UA_counts[i] - 70, str(UA_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['UA'])     # UA 아래
-    ax_upper.text(i, Total_counts[i] + 150, str(Total_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['Total'])  # Total 위
+    ax_lower.text(i, EV_counts[i] - 70, str(EV_counts[i]), ha='center', va='top', fontsize=15, color=color_dict['EV'])     # EV 아래
+    ax_lower.text(i, B6_counts[i] + 50, str(B6_counts[i]), ha='center', va='bottom', fontsize=15, color=color_dict['B6'])  # B6 위
+    ax_lower.text(i, UA_counts[i] - 70, str(UA_counts[i]), ha='center', va='top', fontsize=15, color=color_dict['UA'])     # UA 아래
+    ax_upper.text(i, Total_counts[i] + 150, str(Total_counts[i]), ha='center', va='bottom', fontsize=15, color=color_dict['Total'])  # Total 위
 
 # Y축 범위
 ax_lower.set_ylim(4000, 5100)
@@ -185,95 +185,154 @@ plt.show()
 
 
 
-################################################################
-EV_total = flights_cleaned[flights_cleaned['carrier']=='EV']
-EV_flight=EV_total[['carrier','distance','air_time']]
 
-# 비율(%) 및 라벨 처리
-for df in [UA_total_group, B6_total_group, EV_total_group, total_group]:
-    df['delay_ratio_percent'] = df['delay_ratio'] * 100
-    df['month_str'] = df['month'].astype(str) + '월'
+
+
+###################################
+#1,2,3등 알수 있는 운항량 그래프
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import seaborn as sns
 
-# 색상 정의
-color_dict = {
-    'EV': '#d62728',     # 빨강
-    'B6': '#2ca02c',     # 초록
-    'UA': '#1f77b4',     # 파랑
-    'Total': '#7f7f7f'   # 회색
-}
+# 항공사별 운항 수 집계
+carrier_counts = df_flights['carrier'].value_counts().reset_index()
+carrier_counts.columns = ['carrier', 'total_flights']
 
-# 월 문자열 추가
-for df in [EV_total_group, B6_total_group, UA_total_group, total_group]:
-    df['month_str'] = df['month'].astype(str) + '월'
+# 항공사 이름 붙이기
+carrier_counts = carrier_counts.merge(df_airlines, on='carrier', how='left')
 
-# 그래프 그리기
-plt.figure(figsize=(14, 8))
-plt.title('항공사별 월별 지연 비율 (%)', fontsize=20, fontweight='bold')
+# 색상 매핑
+def assign_color(carrier):
+    if carrier == 'EV':
+        return 'red'
+    elif carrier in ['UA', 'B6']:
+        return 'blue'
+    else:
+        return 'gray'
 
-# 선 그래프 그리기
-for label, df in {
-    'EV': EV_total_group,
-    'B6': B6_total_group,
-    'UA': UA_total_group,
-    'Total': total_group
-}.items():
-    plt.plot(df['month_str'], df['delay_ratio_percent'], label=label,
-             marker='o',
-             linewidth=4 if label == 'EV' else 2,   # EV만 굵게!
-             color=color_dict[label])
+carrier_counts['color'] = carrier_counts['carrier'].apply(assign_color)
 
-    # 텍스트 위치 및 표시 조건 설정
-    for x, y in zip(df['month_str'], df['delay_ratio_percent']):
-        if label == 'UA':
-            plt.text(x, y - 2, f"{y:.1f}%", ha='center', va='top', fontsize=15, color=color_dict[label])
-        elif label == 'EV':
-            plt.text(x, y + 1.5, f"{y:.1f}%", ha='center', va='bottom', fontsize=15, 
-                     color=color_dict[label], fontweight='bold')  
-        else:
-            plt.text(x, y + 1.5, f"{y:.1f}%", ha='center', va='bottom', fontsize=15, color=color_dict[label])
+# 시각화
+plt.figure(figsize=(14, 7))
+bars = plt.bar(
+    carrier_counts['carrier'],
+    carrier_counts['total_flights'],
+    color=carrier_counts['color']
+)
 
-# y축 퍼센트 포맷
-plt.ylim(0, 70)
-plt.ylabel('지연 비율 (%)', fontsize=12)
-plt.xlabel('월', fontsize=12)
-plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
-
-# 범례
-plt.legend(title='항공사', fontsize=10, title_fontsize=12)
-
+# 레이블 및 제목
+plt.title('항공사별 연간 운항량 (EV=빨강, UA/B6=파랑, 그 외=회색)', fontsize=16, weight='bold')
+plt.xlabel('항공사 코드')
+plt.ylabel('총 운항편 수')
+plt.grid(axis='y')
 plt.tight_layout()
 plt.show()
 
+####################################################
+###단거리 장거리 중거리
+# 1. UA , 57782
+# distance, air_time 확인
+UA_flight=UA_total[['carrier','distance','air_time']]
+UA_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
+# distance는 내림차순, air_time은 오름차순으로 정렬( 동일한 거리에서 시간이 짧을 수록 비행 good)
+UA_flight.describe()
+
+# 2. B6, 54049
+# distance, air_time 확인
+B6_flight= B6_total[['carrier','distance','air_time']]
+B6_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
+B6_flight.describe()
+
+# 3. EV, 51108
+# distance, air_time 확인
+EV_flight=EV_total[['carrier','distance','air_time']]
+EV_flight.sort_values(by=['distance','air_time'], ascending=[False,True])
+EV_flight.describe()
+
+'''
+United Airline
+700 mile 미만 -> short 
+700 mile 이상 3000 mile 미만 -> medium
+3000 mile 이상 -> long
+'''
+
+# 상위 항공사 3개를 합친 새로운 DataFrame 생성
+top3_flights = pd.concat([UA_flight, B6_flight, EV_flight], ignore_index=True)
+
+# 길이 (mile) 에 따른 기준 생성
+def categorize_distance(mile):
+    if mile < 700:
+        return 'short'
+    elif mile < 3000:
+        return 'medium'
+    else:
+        return 'long'
+    
+# length라는 새 column을 만들어 거리를 비교    
+top3_flights['length'] = top3_flights['distance'].apply(categorize_distance)    
+
+# pivot table 생성
+pivot_flight = pd.pivot_table(
+    top3_flights,
+    index='carrier',
+    columns='length',
+    values='distance',      
+    aggfunc='count',
+    fill_value=0
+).reset_index()
+pivot_flight.columns.name = None
+pivot_flight = pivot_flight[['carrier', 'short', 'medium', 'long']]
+pivot_flight 
 
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-##################################################
-#날씨에서 데이터 프레임
+# 거리별 총합을 기준으로 비율 계산
+distance_ratio = pivot_flight.copy()
+total = distance_ratio[['short', 'medium', 'long']].sum(axis=1)
+distance_ratio['short_ratio'] = (distance_ratio['short'] / total * 100).round(2)
+distance_ratio['medium_ratio'] = (distance_ratio['medium'] / total * 100).round(2)
+distance_ratio['long_ratio'] = (distance_ratio['long'] / total * 100).round(2)
 
-top3_carriers = ['UA', 'B6', 'EV']
-filtered = flights_cleaned[
-    (flights_cleaned['carrier'].isin(top3_carriers)) &
-    (flights_cleaned['month'].between(1, 6)) &
-    (flights_cleaned['origin'].isin(['EWR', 'JFK', 'LGA']))
-]
-
-# 항공사별 × 공항별 × 월별 운항 수 집계
-monthly_airport_counts = (
-    filtered.groupby(['carrier', 'month', 'origin'])
-    .size()
-    .reset_index(name='flight_count')
+# melt해서 long-form으로 변환
+distance_ratio_melted = pd.melt(
+    distance_ratio,
+    id_vars='carrier',
+    value_vars=['short_ratio', 'medium_ratio', 'long_ratio'],
+    var_name='distance_group',
+    value_name='비율'
 )
 
-# 피벗 테이블로 보기 좋게 정리
-pivot_table = monthly_airport_counts.pivot_table(
-    index=['carrier', 'month'],
-    columns='origin',
-    values='flight_count',
-    fill_value=0
-).astype(int)
+# distance_group 한글 라벨 정리
+distance_ratio_melted['distance_group'] = distance_ratio_melted['distance_group'].map({
+    'short_ratio': '단거리',
+    'medium_ratio': '중거리',
+    'long_ratio': '장거리'
+})
 
-pivot_table
+# 시각화
+plt.figure(figsize=(10, 6))
+ax = sns.barplot(data=distance_ratio_melted, x='carrier', y='비율', hue='distance_group')
+
+# 막대 위에 비율 표시
+for container in ax.containers:
+    for bar in container:
+        height = bar.get_height()
+        if height > 0:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 0.5,
+                f'{height:.1f}%',
+                ha='center',
+                va='bottom',
+                fontsize=9
+            )
+
+plt.title('항공사별 거리 구간별 항공편 비율 (%)', fontsize=15, fontweight='bold')
+plt.xlabel('항공사')
+plt.ylabel('항공편 비율 (%)')
+plt.legend(title='비행 거리 구간')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
