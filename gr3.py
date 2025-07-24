@@ -182,7 +182,7 @@ plt.subplots_adjust(hspace=0.05)
 plt.tight_layout()
 plt.show()
 
-
+#뭘가
 
 
 
