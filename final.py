@@ -72,6 +72,7 @@ pivot_table = monthly_airport_counts.pivot_table(
 ).astype(int)
 
 print(pivot_table)
+pivot_table
 
 ##EV, UA, B6 각 항공사에서
 ##출발지연이 가장 심한 항공편 5개의 날씨
