@@ -1,3 +1,43 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nycflights13 as flights
+
+df_flights = flights.flights
+df_airlines = flights.airlines
+df_airports = flights.airports
+df_planes = flights.planes
+df_weather = flights.weather
+##################################################################################################
+## 데이터 전처리
+
+# 결측치 제거
+flights_cleaned = df_flights.dropna(subset=['dep_time','dep_delay', 'arr_time','arr_delay','tailnum', 'air_time'])
+flights_cleaned.shape # (327346, 19)
+
+# flights_cleanded와 df_planes merge ( key = tailnum )
+flights_cleaned = pd.merge(flights_cleaned,df_planes,on='tailnum',how='left')
+
+# 시간순으로 날짜 재정렬
+flights_cleaned.sort_values(['month', 'day'], inplace=True)
+flights_cleaned = flights_cleaned.reset_index(drop=True) # 인덱스 초기화
+
+# 15분 이상 지연된 항공편만 따로 데이터 프레임 생성 
+flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
+flights_delay = flights_delay.reset_index(drop=True)
+flights_delay
+
+flights_cleaned['month_day_time'] = pd.to_datetime({
+    'year': df_flights['year'],
+    'month': df_flights['month'],
+    'day': df_flights['day'],
+    'hour': df_flights['hour'],
+    'minute': df_flights['minute']
+})
+
+EV_total = flights_cleaned[flights_cleaned['carrier']=='EV']
+EV_flight=EV_total[['carrier','distance','air_time']]
 #ev 항공사 기체 촤석 분포
 # 한글 폰트 설정 (Windows 기준)
 plt.rcParams['font.family'] = 'Malgun Gothic'
