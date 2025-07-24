@@ -960,7 +960,7 @@ airport_delay = (
     .mean()
     .reset_index()
 )
-
+##
 # 6. total_flights와 delay_count를 airport_delay에 merge
 airport_delay = pd.merge(airport_delay, total_counts, on=['carrier', 'origin'], how='left')
 airport_delay = pd.merge(airport_delay, delay_counts, on=['carrier', 'origin'], how='left')
