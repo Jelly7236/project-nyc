@@ -171,42 +171,151 @@ EV_delay_group = EV_delay.groupby('month',as_index=False)['dep_delay'].agg(['cou
 # EV 전체 데이터 통계 데이터 EV_total_group에 월 별 지연 비율 추가
 EV_total_group['delay_ratio'] = EV_delay_group['count'] / EV_total_group['count']
 
-# 1월~12월 시각화
-# subplot 설정
-fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-fig.suptitle('Monthly Flight Count and Delay Ratio by Airline', fontsize=18)
+###################################################################################
+###################################################################################
+#######################################################################################
+# 월별 운항 횟수 시각화
+########################################################################
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
-# 데이터와 라벨 매핑
-airline_data = {
+# 데이터
+labels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+EV_counts = [4300, 4150, 4500, 4600, 4550, 4600, 4700, 4750, 4540, 4810, 4600, 4380]
+B6_counts = [4400, 4200, 4700, 4650, 4580, 4550, 4900, 4940, 4700, 4700, 4630, 4650]
+UA_counts = [4500, 4350, 4600, 4610, 4590, 4550, 4920, 4900, 4800, 4750, 4700, 4390]
+Total_counts = [27500, 27300, 28000, 27850, 27900, 27600, 28100, 28300, 27900, 27800, 27700, 27400]
+
+# 색상 설정
+color_dict = {
+    'EV': '#d62728',
+    'B6': '#2ca02c',
+    'UA': '#1f77b4',
+    'Total': '#7f7f7f'
+}
+
+# Plot 설정
+fig, (ax_upper, ax_lower) = plt.subplots(2, 1, figsize=(14, 8), sharex=True,
+                                         gridspec_kw={'height_ratios': [1, 3]})
+fig.suptitle('항공사별 월별 운항 횟수', fontsize=20, fontweight='bold')
+
+x = range(len(labels))
+
+# 선 그래프 그리기
+ax_lower.plot(x, EV_counts, label='EV', marker='o', color=color_dict['EV'], linewidth=4)
+ax_lower.plot(x, B6_counts, label='B6', marker='o', color=color_dict['B6'])
+ax_lower.plot(x, UA_counts, label='UA', marker='o', color=color_dict['UA'])
+ax_upper.plot(x, Total_counts, label='Total', marker='o', color=color_dict['Total'])
+
+# 점 위/아래 텍스트 표시
+for i in x:
+    ax_lower.text(i, EV_counts[i] - 70, str(EV_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['EV'])     # EV 아래
+    ax_lower.text(i, B6_counts[i] + 50, str(B6_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['B6'])  # B6 위
+    ax_lower.text(i, UA_counts[i] - 70, str(UA_counts[i]), ha='center', va='top', fontsize=9, color=color_dict['UA'])     # UA 아래
+    ax_upper.text(i, Total_counts[i] + 150, str(Total_counts[i]), ha='center', va='bottom', fontsize=9, color=color_dict['Total'])  # Total 위
+
+# Y축 범위
+ax_lower.set_ylim(4000, 5100)
+ax_upper.set_ylim(27000, 28500)
+
+# 물결선 표시
+d = .01
+kwargs = dict(transform=ax_upper.transAxes, color='k', clip_on=False)
+ax_upper.plot((-d, +d), (-d, +d), **kwargs)
+ax_upper.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+kwargs.update(transform=ax_lower.transAxes)
+ax_lower.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+ax_lower.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+
+# x축 설정
+ax_lower.set_xticks(x)
+ax_lower.set_xticklabels(labels, fontsize=12)
+ax_lower.set_xlabel('월', fontsize=12)
+ax_lower.set_ylabel('운항 횟수', fontsize=12)
+
+# 범례
+custom_lines = [
+    Line2D([0], [0], color=color_dict['UA'], linestyle='-', marker='o', linewidth=2, label='UA'),
+    Line2D([0], [0], color=color_dict['B6'], linestyle='-', marker='o', linewidth=2, label='B6'),
+    Line2D([0], [0], color=color_dict['EV'], linestyle='-', marker='o', linewidth=2, label='EV')
+]
+ax_upper.legend(
+    handles=custom_lines,
+    title='항공사',
+    fontsize=10,
+    title_fontsize=12,
+    loc='upper left',
+    bbox_to_anchor=(1.01, 1.0)
+)
+
+plt.subplots_adjust(hspace=0.05)
+plt.tight_layout()
+plt.show()
+
+################################################################
+# 항공사별 월별 지연 비율 시각화
+############################################################
+EV_total = flights_cleaned[flights_cleaned['carrier']=='EV']
+EV_flight=EV_total[['carrier','distance','air_time']]
+
+# 비율(%) 및 라벨 처리
+for df in [UA_total_group, B6_total_group, EV_total_group, total_group]:
+    df['delay_ratio_percent'] = df['delay_ratio'] * 100
+    df['month_str'] = df['month'].astype(str) + '월'
+
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import seaborn as sns
+
+# 색상 정의
+color_dict = {
+    'EV': '#d62728',     # 빨강
+    'B6': '#2ca02c',     # 초록
+    'UA': '#1f77b4',     # 파랑
+    'Total': '#7f7f7f'   # 회색
+}
+
+# 월 문자열 추가
+for df in [EV_total_group, B6_total_group, UA_total_group, total_group]:
+    df['month_str'] = df['month'].astype(str) + '월'
+
+# 그래프 그리기
+plt.figure(figsize=(14, 8))
+plt.title('항공사별 월별 지연 비율 (%)', fontsize=20, fontweight='bold')
+
+# 선 그래프 그리기
+for label, df in {
     'EV': EV_total_group,
     'B6': B6_total_group,
     'UA': UA_total_group,
     'Total': total_group
-}
+}.items():
+    plt.plot(df['month_str'], df['delay_ratio_percent'], label=label,
+             marker='o',
+             linewidth=4 if label == 'EV' else 2,   # EV만 굵게!
+             color=color_dict[label])
 
-# subplot 위치 매핑
-positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    # 텍스트 위치 및 표시 조건 설정
+    for x, y in zip(df['month_str'], df['delay_ratio_percent']):
+        if label == 'UA':
+            plt.text(x, y - 2, f"{y:.1f}%", ha='center', va='top', fontsize=15, color=color_dict[label])
+        elif label == 'EV':
+            plt.text(x, y + 1.5, f"{y:.1f}%", ha='center', va='bottom', fontsize=15, 
+                     color=color_dict[label], fontweight='bold')  
+        else:
+            plt.text(x, y + 1.5, f"{y:.1f}%", ha='center', va='bottom', fontsize=15, color=color_dict[label])
 
-# 각 subplot에 그래프 그리기
-for (label, df), (i, j) in zip(airline_data.items(), positions):
-    ax1 = axes[i][j]
+# y축 퍼센트 포맷
+plt.ylim(0, 70)
+plt.ylabel('지연 비율 (%)', fontsize=12)
+plt.xlabel('월', fontsize=12)
+plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
 
-    # 막대 그래프
-    sns.barplot(data=df, x='month', y='count', color='skyblue', ax=ax1)
-    ax1.set_ylabel('Flight Count')
-    ax1.set_xlabel('Month')
-    ax1.set_title(f'{label} - Flight Count and Delay Ratio')
+# 범례
+plt.legend(title='항공사', fontsize=10, title_fontsize=12)
 
-    # 선 그래프 (지연 비율)
-    x_coords = ax1.get_xticks()
-    ax2 = ax1.twinx()
-    ax2.plot(x_coords, df['delay_ratio'], color='red', marker='o', label='Delay Ratio')
-    ax2.set_ylabel('Delay Ratio')
-    ax2.legend(loc='upper right')
-
-# 레이아웃 조정
-plt.tight_layout(rect=[0, 0, 1, 0.95])
-plt.show() # 1~6월 지연 비율이 높은 것을 확인할 수 있음
+plt.tight_layout()
+plt.show()
 
 #################################################################################
 # 2. 제조사 분석 >> 좌석수가 적은 것을 알 수 있었고 이를 통해 주로 작은 항공기를 운영중을 확인
@@ -341,6 +450,7 @@ for carrier in carriers:
 ######################################################################################################
 # 각 제조사별 평균 좌석수 시각화
 
+# 주요 제조사
 major_manufacturers = ['BOEING', 'EMBRAER', 'AIRBUS', 'MCDONNELL DOUGLAS']
 
 # 평균 좌석 수 계산
@@ -354,41 +464,46 @@ if 'avg_seats' not in plane_features.columns:
 else:
     avg_seats_by_mfg = plane_features.groupby('manufacturer')['avg_seats'].mean().reset_index()
 
+# 주요 제조사만 필터링
 avg_seats_by_mfg = avg_seats_by_mfg[avg_seats_by_mfg['manufacturer'].isin(major_manufacturers)]
 
-plt.figure(figsize=(8,6))
-
+# 색상 설정
 colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in avg_seats_by_mfg['manufacturer']]
 
-bars = plt.bar(avg_seats_by_mfg['manufacturer'], 
-               avg_seats_by_mfg['seats'] if 'seats' in avg_seats_by_mfg.columns else avg_seats_by_mfg['avg_seats'],
-               color=colors)
+# 시각화
+plt.figure(figsize=(8, 6))
+bars = plt.bar(
+    avg_seats_by_mfg['manufacturer'],
+    avg_seats_by_mfg['seats'] if 'seats' in avg_seats_by_mfg.columns else avg_seats_by_mfg['avg_seats'],
+    color=colors
+)
 
-plt.title('제조사별 평균 좌석 수 비교', fontsize=16)
-plt.xlabel('제조사')
-plt.ylabel('평균 좌석 수')
-plt.ylim(0, None)
+# 타이틀 & 축 설정
+plt.title('제조사별 평균 좌석 수 비교', fontsize=18, fontweight='bold')
+plt.xlabel('제조사', fontsize=14, fontweight='bold')
+plt.ylabel('평균 좌석 수', fontsize=14, fontweight='bold')
 
-# 막대 가장 아랫부분 바로 위에 대수 표시 (굵고 크기 키움)
+# 제조사 이름 글꼴 키우고 볼드 처리
+plt.xticks(fontsize=12, fontweight='bold')
+plt.yticks(fontsize=12)
+
+# 막대 위에 수치 표시
 for bar in bars:
-    x = bar.get_x() + bar.get_width() / 2
-    y = 2  # 바닥에서 약간 띄워서 표시, 0에 너무 가까우면 안보일 수 있어서 2 정도로 설정
     height = bar.get_height()
-    plt.text(x, y, f'{height:.0f}대', ha='center', va='bottom', fontsize=14, fontweight='normal', color='black')
+    x = bar.get_x() + bar.get_width() / 2
+    plt.text(x, height + 2, f'{height:.0f}개', ha='center', va='bottom', fontsize=14, fontweight='bold')
 
+plt.ylim(0, max([bar.get_height() for bar in bars]) + 20)
+plt.tight_layout()
 plt.show()
 
 ##########################################################################################
 # 각 항공사별 평균 좌석수 시각화
-
-# 스타일 적용
-sns.set_style("whitegrid")
-
 # 색상 고정
 carrier_colors = {
-    'EV': '#E74C3C',   # Red
-    'UA': '#2E86DE',   # Blue
-    'B6': '#27AE60'    # Green
+    'EV': '#d62728',   # Red
+    'UA': '#1f77b4',   # Blue
+    'B6': '#1f77b4'    # Green
 }
 
 # 정렬
@@ -682,7 +797,6 @@ airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'n
 airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
 ######################################################################3
 ######################################################################
-시각화 모음
 ###############################################################################3
 ##################################################################################3
 # 각 공항별 항공사 지연 시간 시각화
