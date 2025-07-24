@@ -3,6 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import nycflights13 as flights
+import matplotlib.font_manager as fm
+
+font_path = r"C:\Windows\Fonts\malgun.ttf"
+fm.fontManager.addfont(font_path)
+font_name = fm.FontProperties(fname=font_path).get_name()
+
+plt.rcParams['font.family'] = font_name
+plt.rcParams['axes.unicode_minus'] = False
 
 df_flights = flights.flights
 df_airlines = flights.airlines
@@ -63,6 +71,66 @@ summary_big3 = flights_cleaned.groupby('carrier').apply(
 ).reset_index()
 summary_big3 = summary_big3.sort_values("total_flights", ascending=False)
 summary_big3 
+
+##################################################################################
+######################################################################################
+## 전체 항공사 별 지연율 비교 시각화
+####################################################################################
+#############################################################
+
+bar_colors = ['#d62728' if c == 'EV' else '#1f77b4' for c in summary_big3['carrier']]
+
+plt.figure(figsize=(8,6))
+sns.barplot(data=summary_big3, x='carrier', y='delay_rate (%)', palette=bar_colors)
+
+plt.title('항공사별 지연 비율(%)', fontsize=18, fontweight='bold')   # 제목 크기 키움 + 볼드체
+plt.xlabel('항공사', fontsize=14, fontweight='bold')              # x축 라벨 크기 키움 + 볼드체
+plt.ylabel('지연 비율 (%)', fontsize=14, fontweight='bold')       # y축 라벨 크기 키움 + 볼드체
+
+# x축 항공사 이름 (눈금 레이블) 볼드체, 크기 14
+plt.xticks(fontsize=14, fontweight='bold')
+
+for i, rate in enumerate(summary_big3['delay_rate (%)']):
+    plt.text(i, rate + 0.5, f'{rate}%', ha='center', va='bottom', fontsize=13, fontweight='bold')  # 텍스트 크기 키움 + 볼드체
+
+plt.ylim(0, summary_big3['delay_rate (%)'].max() + 5)
+plt.tight_layout()
+plt.show()
+######################################################################################
+## 각 공항별 지연시간 평균 시각화
+#####################################################################
+# 전체 항공편 수 (공항별)
+total_flights = flights_cleaned.groupby('origin').size().reset_index(name='total_flights')
+
+# 15분 이상 지연된 항공편 수 (공항별)
+delayed_flights = flights_cleaned[flights_cleaned['dep_delay'] >= 15]
+delayed_counts = delayed_flights.groupby('origin').size().reset_index(name='delayed_flights')
+
+# 비율 계산
+delay_ratio = pd.merge(total_flights, delayed_counts, on='origin', how='left')
+delay_ratio['delayed_flights'] = delay_ratio['delayed_flights'].fillna(0)
+delay_ratio['delay_rate'] = delay_ratio['delayed_flights'] / delay_ratio['total_flights']
+delay_ratio = delay_ratio.sort_values('delay_rate', ascending=False)
+
+# 시각화
+plt.figure(figsize=(10, 6))
+sns.barplot(data=delay_ratio, x='origin', y='delay_rate', color='#1f77b4')
+
+# 타이틀 및 축 설정
+plt.title('공항별 출발 지연 비율 (15분 이상 지연 기준)', fontsize=18, fontweight='bold')
+plt.xlabel('출발 공항 코드', fontsize=14, fontweight='bold')
+plt.ylabel('지연 비율 (%)', fontsize=14, fontweight='bold')
+
+# 막대 위에 수치 표시 (퍼센트 형식)
+for i, value in enumerate(delay_ratio['delay_rate']):
+    plt.text(i, value + 0.002, f'{value*100:.1f}%', ha='center', va='bottom', fontsize=12, fontweight='bold')
+
+# 폰트 및 범위 조정
+plt.xticks(fontsize=12, fontweight='bold')
+plt.yticks(fontsize=12)
+plt.ylim(0, delay_ratio['delay_rate'].max() + 0.02)
+plt.tight_layout()
+plt.show()
 
 #################################################################################################
 ## EV만의 특징 분석 1. 월별 분석 2. 제조사 분석 3. 비행 시간 비교
@@ -170,7 +238,189 @@ avg_seats = (
 
 print("\n▶ 항공사별 평균 좌석 수:")
 print(avg_seats)
+##################################################################################
+# 시각화
+##################################################################################
+# 3사 비행기의 제조사 비율 시각화
 
+# 제조사별 색상 고정
+manufacturer_colors = {
+    'BOEING': '#1f77b4',
+    'AIRBUS': '#ff7f0e',
+    'MCDONNELL DOUGLAS': '#2ca02c',
+    'EMBRAER': '#d62728',
+    'BOMBARDIER': '#9467bd',
+    'CANADAIR': '#8c564b',
+    'OTHER': '#aaaaaa'
+}
+
+carriers = plane_features['carrier'].unique()
+
+for carrier in carriers:
+    df_sub = plane_features[plane_features['carrier'] == carrier].copy()
+    df_sub = df_sub.sort_values(by='count', ascending=False)
+
+    total_planes = df_sub['count'].sum()
+
+    # 비율 계산
+    df_sub['ratio'] = df_sub['count'] / total_planes
+
+    # 2% 미만 제조사는 기타로 묶기
+    major = df_sub[df_sub['ratio'] >= 0.02].copy()
+    minor = df_sub[df_sub['ratio'] < 0.02].copy()
+
+    if not minor.empty:
+        other_row = pd.DataFrame({
+            'manufacturer': ['OTHER'],
+            'count': [minor['count'].sum()],
+            'ratio': [minor['count'].sum() / total_planes]
+        })
+        major = pd.concat([major[['manufacturer', 'count', 'ratio']], other_row], ignore_index=True)
+    else:
+        major = df_sub[['manufacturer', 'count', 'ratio']]
+
+    major = major.reset_index(drop=True)
+    labels = major['manufacturer']
+    sizes = major['count']
+    colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in labels]
+
+    # 비율 계산 (누적 각도 계산용)
+    ratios = sizes / sizes.sum()
+    angles = ratios * 360
+    cum_sizes = angles.cumsum()
+    start_angles = np.concatenate(([0], cum_sizes[:-1]))
+
+    # 가장 큰 wedge(1등)의 인덱스
+    max_idx = major['count'].idxmax()
+
+    # 2, 3등 중 하나의 중심각을 60도(1시 방향)에 위치하도록 회전각 계산
+    top_idx = major['count'].nlargest(3).index.tolist()
+    top_idx.remove(max_idx)
+    second_idx = top_idx[0]
+
+    start_angle_2nd = start_angles[second_idx]
+    end_angle_2nd = cum_sizes[second_idx]
+    mid_angle_2nd = (start_angle_2nd + end_angle_2nd) / 2
+
+    # 2등 중심을 60도로 맞추도록 회전
+    startangle = 60 - mid_angle_2nd
+
+    # 파이차트 그리기
+    plt.figure(figsize=(7, 7))
+    wedges, _ = plt.pie(
+        sizes,
+        labels=None,
+        startangle=startangle,
+        colors=colors,
+        wedgeprops={'edgecolor': 'white', 'linewidth': 1},
+    )
+
+    # 상위 2개 제조사 인덱스
+    top2_idx = major['count'].nlargest(2).index.tolist()
+
+    for i, w in enumerate(wedges):
+        if i in top2_idx:
+            angle = (w.theta2 + w.theta1) / 2
+            angle_rad = np.deg2rad(angle)
+            r = 0.55
+            x = r * np.cos(angle_rad)
+            y = r * np.sin(angle_rad)
+
+            ratio_text = f"{(sizes.iloc[i] / total_planes) * 100:.1f}% ({sizes.iloc[i]}대)"
+            plt.text(x, y + 0.05, ratio_text, ha='center', va='center',
+                     fontsize=13, fontweight='bold', color='black')
+            plt.text(x, y - 0.05, labels.iloc[i], ha='center', va='center',
+                     fontsize=12, color='black')
+
+    plt.title(f'{carrier} 항공사의 제조사 비율', fontsize=16, pad=30)
+    plt.text(1.1, -1.2, f'총 비행기 수: {total_planes}', fontsize=12, ha='right')
+
+    plt.axis('equal')
+    plt.tight_layout()
+    plt.show()
+######################################################################################################
+# 각 제조사별 평균 좌석수 시각화
+
+major_manufacturers = ['BOEING', 'EMBRAER', 'AIRBUS', 'MCDONNELL DOUGLAS']
+
+# 평균 좌석 수 계산
+if 'avg_seats' not in plane_features.columns:
+    avg_seats_by_mfg = (
+        big3.dropna(subset=['manufacturer', 'seats'])
+        .groupby('manufacturer')['seats']
+        .mean()
+        .reset_index()
+    )
+else:
+    avg_seats_by_mfg = plane_features.groupby('manufacturer')['avg_seats'].mean().reset_index()
+
+avg_seats_by_mfg = avg_seats_by_mfg[avg_seats_by_mfg['manufacturer'].isin(major_manufacturers)]
+
+plt.figure(figsize=(8,6))
+
+colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in avg_seats_by_mfg['manufacturer']]
+
+bars = plt.bar(avg_seats_by_mfg['manufacturer'], 
+               avg_seats_by_mfg['seats'] if 'seats' in avg_seats_by_mfg.columns else avg_seats_by_mfg['avg_seats'],
+               color=colors)
+
+plt.title('제조사별 평균 좌석 수 비교', fontsize=16)
+plt.xlabel('제조사')
+plt.ylabel('평균 좌석 수')
+plt.ylim(0, None)
+
+# 막대 가장 아랫부분 바로 위에 대수 표시 (굵고 크기 키움)
+for bar in bars:
+    x = bar.get_x() + bar.get_width() / 2
+    y = 2  # 바닥에서 약간 띄워서 표시, 0에 너무 가까우면 안보일 수 있어서 2 정도로 설정
+    height = bar.get_height()
+    plt.text(x, y, f'{height:.0f}대', ha='center', va='bottom', fontsize=14, fontweight='normal', color='black')
+
+plt.show()
+
+##########################################################################################
+# 각 항공사별 평균 좌석수 시각화
+
+# 스타일 적용
+sns.set_style("whitegrid")
+
+# 색상 고정
+carrier_colors = {
+    'EV': '#E74C3C',   # Red
+    'UA': '#2E86DE',   # Blue
+    'B6': '#27AE60'    # Green
+}
+
+# 정렬
+avg_seats_sorted = avg_seats.sort_values(by='avg_seats', ascending=False).reset_index(drop=True)
+
+# 색상 리스트 생성
+bar_colors = [carrier_colors.get(carrier, 'gray') for carrier in avg_seats_sorted['carrier']]
+
+# 시각화
+plt.figure(figsize=(9, 6))
+bars = sns.barplot(data=avg_seats_sorted, x='carrier', y='avg_seats', palette=bar_colors)
+
+# 수치 텍스트 박스 추가
+for bar, value in zip(bars.patches, avg_seats_sorted['avg_seats']):
+    bars.annotate(f"{value:.1f}",
+                  (bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                  ha='center', va='bottom',
+                  fontsize=13, fontweight='bold',
+                  bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=0.5))
+
+# 제목과 라벨
+plt.title("항공사별 평균 좌석 수", fontsize=18, weight='bold')
+plt.xlabel("항공사", fontsize=13)
+plt.ylabel("평균 좌석 수", fontsize=13)
+plt.ylim(0, avg_seats_sorted['avg_seats'].max() + 30)
+
+# 범례 수동 추가
+custom_labels = [plt.Rectangle((0,0),1,1, color=carrier_colors[c]) for c in avg_seats_sorted['carrier']]
+plt.legend(custom_labels, avg_seats_sorted['carrier'], title="항공사", loc='upper right')
+
+plt.tight_layout()
+plt.show()
 
 ##############################################################################
 # 3. 각 항공사 별 단거리 중거리 장거리 파악 >> EV는 작은 비행기를 운행하는 단거리 항공사이다
@@ -430,39 +680,48 @@ airport_delay['carrier'] = pd.Categorical(airport_delay['carrier'], categories=c
 # 9. 공항 이름 붙이기 (origin -> 공항명)
 airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'name': 'airport_name'})
 airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
+######################################################################3
+######################################################################
+시각화 모음
+###############################################################################3
+##################################################################################3
+# 각 공항별 항공사 지연 시간 시각화
+# carrier별 색상 딕셔너리 (EV 빨강, 나머지 파랑)
+palette_dict = {
+    'EV': '#d62728',
+    'UA': '#1f77b4',
+    'B6': '#1f77b4',
+}
 
-# 10. 시각화
-# 시각화용 폰트 설정
-plt.rcParams['font.family'] = 'Malgun Gothic'
-plt.rcParams['axes.unicode_minus'] = False
-
-# 서브플롯 생성 (1행 2열)
-fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-
-# 1. 평균 지연 시간 시각화
-sns.barplot(
+plt.figure(figsize=(12, 7))
+barplot = sns.barplot(
     data=airport_delay,
-    x='origin', y='dep_delay', hue='carrier',
-    ax=axes[0]
+    x='origin',
+    y='dep_delay',   # 평균 지연 시간 컬럼명으로 맞춰주세요
+    hue='carrier',
+    palette=palette_dict
 )
-axes[0].set_title('출발 공항별 항공사 평균 지연 시간')
-axes[0].set_xlabel('출발 공항 코드')
-axes[0].set_ylabel('평균 지연 시간 (분)')
-axes[0].grid(True, axis='y')
 
-# 2. 지연 비율 시각화
-sns.barplot(
-    data=airport_delay,
-    x='origin', y='delay_ratio', hue='carrier',
-    ax=axes[1]
-)
-axes[1].set_title('출발 공항별 항공사 지연 비율 (15분 이상 지연)')
-axes[1].set_xlabel('출발 공항 코드')
-axes[1].set_ylabel('지연 비율')
-axes[1].set_ylim(0, 0.5)
-axes[1].grid(True, axis='y')
+plt.title('공항별 항공사 평균 출발 지연 시간 (분)', fontsize=20, fontweight='bold')
+plt.xlabel('출발 공항 코드', fontsize=16, fontweight='bold')
+plt.ylabel('평균 지연 시간 (분)', fontsize=16, fontweight='bold')
 
-# 전체 레이아웃 정리
+# 막대 위에 지연 시간 표시 (0보다 클 때만)
+for p in barplot.patches:
+    height = p.get_height()
+    if height > 0:
+        plt.text(
+            p.get_x() + p.get_width()/2,
+            height + 0.5,
+            f'{height:.1f}분',
+            ha='center',
+            va='bottom',
+            fontsize=14,
+            fontweight='bold'
+        )
+
+plt.legend(title='항공사', title_fontsize=14, fontsize=12)
+plt.xticks(fontsize=14, fontweight='bold')
+plt.yticks(fontsize=14)
 plt.tight_layout()
 plt.show()
-
