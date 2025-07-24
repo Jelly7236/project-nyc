@@ -103,9 +103,6 @@ EV_delay_group = EV_delay.groupby('month',as_index=False)['dep_delay'].agg(['cou
 # EV 전체 데이터 통계 데이터 EV_total_group에 월 별 지연 비율 추가
 EV_total_group['delay_ratio'] = EV_delay_group['count'] / EV_total_group['count']
 
-#######################################################################################
-# 월별 운항 횟수 시각화
-########################################################################
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 # 한글 폰트 설정 (Windows 기준)
@@ -185,18 +182,10 @@ plt.subplots_adjust(hspace=0.05)
 plt.tight_layout()
 plt.show()
 
-
 #뭘가
 
 
 
-
-
-################################################################
-# 항공사별 월별 지연 비율 시각화
-############################################################
-EV_total = flights_cleaned[flights_cleaned['carrier']=='EV']
-EV_flight=EV_total[['carrier','distance','air_time']]
 
 
 ###################################
