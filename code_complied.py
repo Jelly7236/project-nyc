@@ -386,31 +386,14 @@ print(avg_seats)
 ##################################################################################
 # 시각화
 ##################################################################################
-# 3사 비행기의 제조사 비율 시각화
-
-# 제조사별 색상 고정
-manufacturer_colors = {
-    'BOEING': '#1f77b4',
-    'AIRBUS': '#ff7f0e',
-    'MCDONNELL DOUGLAS': '#2ca02c',
-    'EMBRAER': '#d62728',
-    'BOMBARDIER': '#9467bd',
-    'CANADAIR': '#8c564b',
-    'OTHER': '#aaaaaa'
-}
-
-carriers = plane_features['carrier'].unique()
-
-for carrier in carriers:
-    df_sub = plane_features[plane_features['carrier'] == carrier].copy()
+# 3사 비행기의 제조사 비율 시각화###############
+def preprocess_carrier_pie(carrier_code):
+    df_sub = plane_features[plane_features['carrier'] == carrier_code].copy()
     df_sub = df_sub.sort_values(by='count', ascending=False)
 
     total_planes = df_sub['count'].sum()
-
-    # 비율 계산
     df_sub['ratio'] = df_sub['count'] / total_planes
 
-    # 2% 미만 제조사는 기타로 묶기
     major = df_sub[df_sub['ratio'] >= 0.02].copy()
     minor = df_sub[df_sub['ratio'] < 0.02].copy()
 
@@ -425,64 +408,167 @@ for carrier in carriers:
         major = df_sub[['manufacturer', 'count', 'ratio']]
 
     major = major.reset_index(drop=True)
-    labels = major['manufacturer']
-    sizes = major['count']
-    colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in labels]
+    return major, total_planes
 
-    # 비율 계산 (누적 각도 계산용)
-    ratios = sizes / sizes.sum()
-    angles = ratios * 360
-    cum_sizes = angles.cumsum()
-    start_angles = np.concatenate(([0], cum_sizes[:-1]))
+manufacturer_colors = {
+    'BOEING': '#1f77b4',
+    'AIRBUS': '#ff7f0e',
+    'MCDONNELL DOUGLAS': '#2ca02c',
+    'EMBRAER': '#d62728',
+    'BOMBARDIER': '#9467bd',
+    'CANADAIR': '#8c564b',
+    'OTHER': '#aaaaaa'
+}
 
-    # 가장 큰 wedge(1등)의 인덱스
-    max_idx = major['count'].idxmax()
+############### EV
+major, total_planes = preprocess_carrier_pie('EV')
+labels = major['manufacturer']
+sizes = major['count']
+colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in labels]
 
-    # 2, 3등 중 하나의 중심각을 60도(1시 방향)에 위치하도록 회전각 계산
-    top_idx = major['count'].nlargest(3).index.tolist()
-    top_idx.remove(max_idx)
-    second_idx = top_idx[0]
+ratios = sizes / sizes.sum()
+angles = ratios * 360
+cum_sizes = angles.cumsum()
+start_angles = np.concatenate(([0], cum_sizes[:-1]))
 
-    start_angle_2nd = start_angles[second_idx]
-    end_angle_2nd = cum_sizes[second_idx]
-    mid_angle_2nd = (start_angle_2nd + end_angle_2nd) / 2
+max_idx = major['count'].idxmax()
+top_idx = major['count'].nlargest(3).index.tolist()
+top_idx.remove(max_idx)
+second_idx = top_idx[0]
 
-    # 2등 중심을 60도로 맞추도록 회전
-    startangle = 60 - mid_angle_2nd
+start_angle_2nd = start_angles[second_idx]
+end_angle_2nd = cum_sizes[second_idx]
+mid_angle_2nd = (start_angle_2nd + end_angle_2nd) / 2
+startangle = 60 - mid_angle_2nd
 
-    # 파이차트 그리기
-    plt.figure(figsize=(7, 7))
-    wedges, _ = plt.pie(
-        sizes,
-        labels=None,
-        startangle=startangle,
-        colors=colors,
-        wedgeprops={'edgecolor': 'white', 'linewidth': 1},
-    )
+plt.figure(figsize=(7, 7))
+wedges, _ = plt.pie(
+    sizes,
+    labels=None,
+    startangle=startangle,
+    colors=colors,
+    wedgeprops={'edgecolor': 'white', 'linewidth': 1},
+)
 
-    # 상위 2개 제조사 인덱스
-    top2_idx = major['count'].nlargest(2).index.tolist()
+top2_idx = major['count'].nlargest(2).index.tolist()
+for i, w in enumerate(wedges):
+    if i in top2_idx:
+        angle = (w.theta2 + w.theta1) / 2
+        angle_rad = np.deg2rad(angle)
+        r = 0.55
+        x = r * np.cos(angle_rad)
+        y = r * np.sin(angle_rad)
+        plt.text(x, y + 0.05, f"{(sizes.iloc[i] / total_planes) * 100:.1f}% ({sizes.iloc[i]}대)",
+                 ha='center', va='center', fontsize=13, fontweight='bold', color='black')
+        plt.text(x, y - 0.05, labels.iloc[i], ha='center', va='center',
+                 fontsize=12, color='black')
 
-    for i, w in enumerate(wedges):
-        if i in top2_idx:
-            angle = (w.theta2 + w.theta1) / 2
-            angle_rad = np.deg2rad(angle)
-            r = 0.55
-            x = r * np.cos(angle_rad)
-            y = r * np.sin(angle_rad)
+plt.title('EV 항공사의 제조사 비율', fontsize=16, pad=30)
+plt.text(1.1, -1.2, f'총 비행기 수: {total_planes}', fontsize=12, ha='right')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
 
-            ratio_text = f"{(sizes.iloc[i] / total_planes) * 100:.1f}% ({sizes.iloc[i]}대)"
-            plt.text(x, y + 0.05, ratio_text, ha='center', va='center',
-                     fontsize=13, fontweight='bold', color='black')
-            plt.text(x, y - 0.05, labels.iloc[i], ha='center', va='center',
-                     fontsize=12, color='black')
+#########################################################################
+############### UA
+major, total_planes = preprocess_carrier_pie('UA')
+labels = major['manufacturer']
+sizes = major['count']
+colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in labels]
 
-    plt.title(f'{carrier} 항공사의 제조사 비율', fontsize=16, pad=30)
-    plt.text(1.1, -1.2, f'총 비행기 수: {total_planes}', fontsize=12, ha='right')
+ratios = sizes / sizes.sum()
+angles = ratios * 360
+cum_sizes = angles.cumsum()
+start_angles = np.concatenate(([0], cum_sizes[:-1]))
 
-    plt.axis('equal')
-    plt.tight_layout()
-    plt.show()
+max_idx = major['count'].idxmax()
+top_idx = major['count'].nlargest(3).index.tolist()
+top_idx.remove(max_idx)
+second_idx = top_idx[0]
+
+start_angle_2nd = start_angles[second_idx]
+end_angle_2nd = cum_sizes[second_idx]
+mid_angle_2nd = (start_angle_2nd + end_angle_2nd) / 2
+startangle = 60 - mid_angle_2nd
+
+plt.figure(figsize=(7, 7))
+wedges, _ = plt.pie(
+    sizes,
+    labels=None,
+    startangle=startangle,
+    colors=colors,
+    wedgeprops={'edgecolor': 'white', 'linewidth': 1},
+)
+
+top2_idx = major['count'].nlargest(2).index.tolist()
+for i, w in enumerate(wedges):
+    if i in top2_idx:
+        angle = (w.theta2 + w.theta1) / 2
+        angle_rad = np.deg2rad(angle)
+        r = 0.55
+        x = r * np.cos(angle_rad)
+        y = r * np.sin(angle_rad)
+        plt.text(x, y + 0.05, f"{(sizes.iloc[i] / total_planes) * 100:.1f}% ({sizes.iloc[i]}대)",
+                 ha='center', va='center', fontsize=13, fontweight='bold', color='black')
+        plt.text(x, y - 0.05, labels.iloc[i], ha='center', va='center',
+                 fontsize=12, color='black')
+
+plt.title('UA 항공사의 제조사 비율', fontsize=16, pad=30)
+plt.text(1.1, -1.2, f'총 비행기 수: {total_planes}', fontsize=12, ha='right')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
+
+#######################################################################
+# B6
+###############
+major, total_planes = preprocess_carrier_pie('B6')
+labels = major['manufacturer']
+sizes = major['count']
+colors = [manufacturer_colors.get(mfg, '#cccccc') for mfg in labels]
+
+ratios = sizes / sizes.sum()
+angles = ratios * 360
+cum_sizes = angles.cumsum()
+start_angles = np.concatenate(([0], cum_sizes[:-1]))
+
+max_idx = major['count'].idxmax()
+top_idx = major['count'].nlargest(3).index.tolist()
+top_idx.remove(max_idx)
+second_idx = top_idx[0]
+
+start_angle_2nd = start_angles[second_idx]
+end_angle_2nd = cum_sizes[second_idx]
+mid_angle_2nd = (start_angle_2nd + end_angle_2nd) / 2
+startangle = 60 - mid_angle_2nd
+
+plt.figure(figsize=(7, 7))
+wedges, _ = plt.pie(
+    sizes,
+    labels=None,
+    startangle=startangle,
+    colors=colors,
+    wedgeprops={'edgecolor': 'white', 'linewidth': 1},
+)
+
+top2_idx = major['count'].nlargest(2).index.tolist()
+for i, w in enumerate(wedges):
+    if i in top2_idx:
+        angle = (w.theta2 + w.theta1) / 2
+        angle_rad = np.deg2rad(angle)
+        r = 0.55
+        x = r * np.cos(angle_rad)
+        y = r * np.sin(angle_rad)
+        plt.text(x, y + 0.05, f"{(sizes.iloc[i] / total_planes) * 100:.1f}% ({sizes.iloc[i]}대)",
+                 ha='center', va='center', fontsize=13, fontweight='bold', color='black')
+        plt.text(x, y - 0.05, labels.iloc[i], ha='center', va='center',
+                 fontsize=12, color='black')
+
+plt.title('B6 항공사의 제조사 비율', fontsize=16, pad=30)
+plt.text(1.1, -1.2, f'총 비행기 수: {total_planes}', fontsize=12, ha='right')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
 ######################################################################################################
 # 각 제조사별 평균 좌석수 시각화
 
