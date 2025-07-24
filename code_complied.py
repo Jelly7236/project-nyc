@@ -83,7 +83,7 @@ bar_colors = ['#d62728' if c == 'EV' else '#1f77b4' for c in summary_big3['carri
 plt.figure(figsize=(8,6))
 sns.barplot(data=summary_big3, x='carrier', y='delay_rate (%)', palette=bar_colors)
 
-plt.title('항공사별 지연 비율(%)', fontsize=18, fontweight='bold')   # 제목 크기 키움 + 볼드체
+plt.title('항공사별 출발 지연 비율(%)', fontsize=18, fontweight='bold')   # 제목 크기 키움 + 볼드체
 plt.xlabel('항공사', fontsize=14, fontweight='bold')              # x축 라벨 크기 키움 + 볼드체
 plt.ylabel('지연 비율 (%)', fontsize=14, fontweight='bold')       # y축 라벨 크기 키움 + 볼드체
 
@@ -648,45 +648,181 @@ schedule_summary.dropna()
 
 schedule_summary.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
 
-# 평균 비행 간격이 짧은 상위 5개 항공기 + 좌석수 보기
-top_planes = schedule_summary.sort_values('avg_gap_hr').head(5)
-
-plt.figure(figsize=(10, 5))
-sns.barplot(data=top_planes, x='tailnum', y='avg_gap_hr')
-plt.xticks(rotation=45)
-plt.title('The 5 EV aircraft with the shortest average flight intervals')
-plt.xlabel('Tail Number')
-plt.ylabel('Average Gap (hours)')
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-# 비행기의 좌석 수도 함께 보고 싶다면,
+top_planes = schedule_summary.sort_values('avg_gap_hr').head(10)
 
 top_planes_with_seats = pd.merge(
     top_planes,
-    df_planes[['tailnum', 'seats']],  # 필요한 열만 선택
+    df_planes[['tailnum', 'seats']],
     on='tailnum',
-    how='left'  # 좌측 기준으로 결합 (top_planes 기준)
+    how='left'
 )
+
+# 색상: 상위 4개는 빨간색, 나머지는 파란색
+colors = ['#d62728' if i < 4 else '#1f77b4' for i in range(len(top_planes_with_seats))]
+
 plt.figure(figsize=(10, 5))
-sns.barplot(data=top_planes_with_seats, x='tailnum', y='avg_gap_hr')
-plt.xticks(rotation=45)
-plt.title('The 5 EV aircraft with the shortest average flight intervals')
-plt.xlabel('Tail Number')
-plt.ylabel('Average Gap (hours)')
+barplot = sns.barplot(data=top_planes_with_seats, x='tailnum', y='avg_gap_hr', palette=colors)
+
+plt.xticks(rotation=45, fontsize=12, fontweight='bold')
+plt.title('평균 비행 간격이 가장 짧은 10대 EV 항공기', fontsize=16, fontweight='bold')
+plt.xlabel('항공기 꼬리 번호', fontsize=14, fontweight='bold')
+plt.ylabel('평균 비행 간격 (시간)', fontsize=14, fontweight='bold')
 plt.grid(True)
 
-# 막대 위에 좌석 수 표시
+# 막대 위에 좌석 수 표시 (한글, 볼드, 글자 크기 업)
 for i, row in top_planes_with_seats.iterrows():
     if pd.notna(row['seats']):
         plt.text(
             x=i,
-            y=row['avg_gap_hr'] + 0.2,  # 막대 위 약간 띄우기
-            s=f"{int(row['seats'])} seats",
+            y=row['avg_gap_hr'] + 0.2,
+            s=f"{int(row['seats'])}석",
             ha='center',
             va='bottom',
-            fontsize=10,
+            fontsize=12,
+            fontweight='bold'
+        )
+
+plt.tight_layout()
+plt.show()
+
+################################################################################
+# UA 기체 회전율
+# UA 항공사의 기체 회전율 비교
+ua_schedule = UA_total[['tailnum', 'month_day_time']].dropna()
+
+# 1. datetime 형식으로 먼저 변환
+ua_schedule['month_day_time'] = pd.to_datetime(ua_schedule['month_day_time'])
+
+ua_schedule = ua_schedule.sort_values(['tailnum', 'month_day_time'])
+
+# 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
+
+ua_schedule['time_gap'] = ua_schedule.groupby('tailnum')['month_day_time'].diff()
+
+# 값이 NaT인 경우, 
+# 앞쪽 값들 (NaT): 해당 tailnum 그룹에서 첫 비행 → 비교 대상 없음 → NaT
+
+# 간격을 시간(hour) 단위로 변경
+ua_schedule['gap_hours'] = ua_schedule['time_gap'].dt.total_seconds() / 3600
+
+# 3. 결과 확인
+ua_schedule['time_gap']
+print(ua_schedule.head(10))
+
+# 4. 값 확인
+schedule_summary_ua = ua_schedule.groupby('tailnum')['gap_hours'].agg(['mean', 'min', 'count']).reset_index().sort_values('count',ascending=False)
+
+schedule_summary_ua['count'].describe()
+
+schedule_summary_ua.dropna()
+
+schedule_summary_ua.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
+
+top_planes_ua = schedule_summary_ua.sort_values('avg_gap_hr').head(10)
+
+# 좌석수 정보 병합
+top_planes_ua_with_seats = pd.merge(
+    top_planes_ua,
+    df_planes[['tailnum', 'seats']],
+    on='tailnum',
+    how='left'
+)
+
+plt.figure(figsize=(10, 5))
+barplot = sns.barplot(
+    data=top_planes_ua_with_seats,
+    x='tailnum',
+    y='avg_gap_hr',
+    color='#1f77b4'  # 파란색
+)
+
+plt.xticks(rotation=45, fontsize=12, fontweight='bold')
+plt.title('평균 비행 간격이 가장 짧은 10대 UA 항공기', fontsize=16, fontweight='bold')
+plt.xlabel('항공기 꼬리 번호', fontsize=14, fontweight='bold')
+plt.ylabel('평균 비행 간격 (시간)', fontsize=14, fontweight='bold')
+plt.grid(True)
+
+# 막대 위에 좌석 수 표시
+for i, row in top_planes_ua_with_seats.iterrows():
+    if pd.notna(row['seats']):
+        plt.text(
+            x=i,
+            y=row['avg_gap_hr'] + 0.2,
+            s=f"{int(row['seats'])}석",
+            ha='center',
+            va='bottom',
+            fontsize=12,
+            fontweight='bold'
+        )
+
+plt.tight_layout()
+plt.show()
+#################################################################################
+# B6 기체 회전율
+# B6 항공사 중에서 tailnum, 출발 시간, 날짜 정보 추출
+b6_schedule = B6_total[['tailnum', 'month_day_time']].dropna()
+
+# 1. datetime 형식으로 먼저 변환
+b6_schedule['month_day_time'] = pd.to_datetime(b6_schedule['month_day_time'])
+
+b6_schedule = b6_schedule.sort_values(['tailnum', 'month_day_time'])
+
+# 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
+b6_schedule['time_gap'] = b6_schedule.groupby('tailnum')['month_day_time'].diff()
+
+# 값이 NaT인 경우, 
+# 앞쪽 값들 (NaT): 해당 tailnum 그룹에서 첫 비행 → 비교 대상 없음 → NaT
+
+# 간격을 시간(hour) 단위로 변경
+b6_schedule['gap_hours'] = b6_schedule['time_gap'].dt.total_seconds() / 3600
+
+# 3. 결과 확인
+b6_schedule['time_gap']
+print(b6_schedule.head(10))
+
+# 4. 값 확인
+schedule_summary_b6 = b6_schedule.groupby('tailnum')['gap_hours'].agg(['mean', 'min', 'count']).reset_index().sort_values('count',ascending=False)
+
+schedule_summary_b6['count'].describe()
+
+schedule_summary_b6.dropna()
+
+schedule_summary_b6.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
+
+top_planes_b6 = schedule_summary_b6.sort_values('avg_gap_hr').head(10)
+
+# 좌석수 정보 병합
+top_planes_b6_with_seats = pd.merge(
+    top_planes_b6,
+    df_planes[['tailnum', 'seats']],
+    on='tailnum',
+    how='left'
+)
+
+plt.figure(figsize=(10, 5))
+barplot = sns.barplot(
+    data=top_planes_b6_with_seats,
+    x='tailnum',
+    y='avg_gap_hr',
+    color='#1f77b4'  # 파란색
+)
+
+plt.xticks(rotation=45, fontsize=12, fontweight='bold')
+plt.title('평균 비행 간격이 가장 짧은 10대 B6 항공기', fontsize=16, fontweight='bold')
+plt.xlabel('항공기 꼬리 번호', fontsize=14, fontweight='bold')
+plt.ylabel('평균 비행 간격 (시간)', fontsize=14, fontweight='bold')
+plt.grid(True)
+
+# 막대 위에 좌석 수 표시
+for i, row in top_planes_b6_with_seats.iterrows():
+    if pd.notna(row['seats']):
+        plt.text(
+            x=i,
+            y=row['avg_gap_hr'] + 0.2,
+            s=f"{int(row['seats'])}석",
+            ha='center',
+            va='bottom',
+            fontsize=12,
             fontweight='bold'
         )
 
@@ -700,6 +836,47 @@ origin_summary = flights_cleaned.groupby('origin')[['distance', 'air_time']].mea
 origin_summary 
 # jfk 거리가 1222 lga는 872로 평균 거리차이가 있음
 # 시간도 171 , 127로 차이가 있음
+
+## 공항별 평균 거리와 비행시간 시각화
+plt.figure(figsize=(14, 5))
+
+# 색상 매핑 함수
+def get_color(airport):
+    if airport == 'JFK':
+        return '#2ca02c'  # 초록
+    elif airport == 'LGA':
+        return '#d62728'  # 빨강
+    else:
+        return '#1f77b4'  # 기본 파랑
+
+# 1. 공항별 평균 거리 시각화
+plt.subplot(1, 2, 1)
+colors_dist = origin_summary['origin'].apply(get_color).tolist()
+sns.barplot(data=origin_summary, x='origin', y='distance', palette=colors_dist)
+plt.title('공항별 평균 거리 (마일)', fontsize=16, fontweight='bold')
+plt.xlabel('출발 공항 코드', fontsize=14, fontweight='bold')
+plt.ylabel('평균 거리 (마일)', fontsize=14, fontweight='bold')
+plt.xticks(fontsize=12, fontweight='bold')
+plt.yticks(fontsize=12)
+
+for i, val in enumerate(origin_summary['distance']):
+    plt.text(i, val + 10, f'{val:.1f}', ha='center', va='bottom', fontsize=12, fontweight='bold')
+
+# 2. 공항별 평균 비행 시간 시각화
+plt.subplot(1, 2, 2)
+colors_time = origin_summary['origin'].apply(get_color).tolist()
+sns.barplot(data=origin_summary, x='origin', y='air_time', palette=colors_time)
+plt.title('공항별 평균 비행 시간 (분)', fontsize=16, fontweight='bold')
+plt.xlabel('출발 공항 코드', fontsize=14, fontweight='bold')
+plt.ylabel('평균 비행 시간 (분)', fontsize=14, fontweight='bold')
+plt.xticks(fontsize=12, fontweight='bold')
+plt.yticks(fontsize=12)
+
+for i, val in enumerate(origin_summary['air_time']):
+    plt.text(i, val + 2, f'{val:.1f}', ha='center', va='bottom', fontsize=12, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
 
 # 1. 세 항공사만 필터링
 big3 = flights_cleaned[flights_cleaned['carrier'].isin(['UA', 'B6', 'EV'])]
@@ -729,24 +906,8 @@ airport_delay = (
     .reset_index()
 )
 
-# 원하는 carrier 순서로 지정
-carrier_order = ['UA', 'B6', 'EV']
-airport_delay['carrier'] = pd.Categorical(airport_delay['carrier'], categories=carrier_order, ordered=True)
 
-# 공항 이름 붙이기 (origin code -> 공항명)
-airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'name': 'airport_name'})
-airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
-
-# 시각화
-plt.figure(figsize=(10, 6))
-sns.barplot(data=airport_delay, x='origin', y='dep_delay', hue='carrier')
-plt.title('항공사별 출발 공항 기준 평균 출발 지연 시간 (UA, B6, EV)')
-plt.xlabel('출발 공항 코드')
-plt.ylabel('평균 출발 지연 시간 (분)')
-plt.grid(True, axis='y')
-plt.tight_layout()
-plt.show()
-
+##############################################################################
 
 ############################
 # 공항, 항공사별 지연된 항공편 수
@@ -839,3 +1000,10 @@ plt.xticks(fontsize=14, fontweight='bold')
 plt.yticks(fontsize=14)
 plt.tight_layout()
 plt.show()
+# 원하는 carrier 순서로 지정
+carrier_order = ['UA', 'B6', 'EV']
+airport_delay['carrier'] = pd.Categorical(airport_delay['carrier'], categories=carrier_order, ordered=True)
+
+# 공항 이름 붙이기 (origin code -> 공항명)
+airport_names = df_airports[['faa', 'name']].rename(columns={'faa': 'origin', 'name': 'airport_name'})
+airport_delay = pd.merge(airport_delay, airport_names, on='origin', how='left')
