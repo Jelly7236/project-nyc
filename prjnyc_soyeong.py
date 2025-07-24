@@ -106,6 +106,9 @@ ev_schedule = df_flights[df_flights['carrier'] == 'EV'][['tailnum', 'month_day_t
 # 1. datetime 형식으로 먼저 변환
 ev_schedule['month_day_time'] = pd.to_datetime(ev_schedule['month_day_time'])
 
+# 시간을 기준으로 정렬
+ev_schedule = ev_schedule.sort_values(['tailnum', 'month_day_time'])
+
 # 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
 
 ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff()
@@ -142,7 +145,7 @@ schedule_summary.dropna()
 schedule_summary.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
 
 # 평균 비행 간격이 짧은 상위 5개 항공기 + 좌석수 보기
-top_planes = schedule_summary.sort_values('avg_gap_hr').head(5)
+top_planes = schedule_summary.sort_values('avg_gap_hr').head(10)
 
 plt.figure(figsize=(10, 5))
 sns.barplot(data=top_planes, x='tailnum', y='avg_gap_hr')
@@ -186,4 +189,98 @@ for i, row in top_planes_with_seats.iterrows():
 plt.tight_layout()
 plt.show()
 
-# 시각화는 좀 더 예뿌게 부탁드립니다 ^_^*
+
+# UA 항공사의 기체 회전율 비교
+ua_schedule = df_flights[df_flights['carrier'] == 'UA'][['tailnum', 'month_day_time']].dropna()
+
+# 1. datetime 형식으로 먼저 변환
+ua_schedule['month_day_time'] = pd.to_datetime(ua_schedule['month_day_time'])
+
+ua_schedule = ua_schedule.sort_values(['tailnum', 'month_day_time'])
+
+# 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
+
+ua_schedule['time_gap'] = ua_schedule.groupby('tailnum')['month_day_time'].diff()
+
+# 값이 NaT인 경우, 
+# 앞쪽 값들 (NaT): 해당 tailnum 그룹에서 첫 비행 → 비교 대상 없음 → NaT
+
+# 간격을 시간(hour) 단위로 변경
+ua_schedule['gap_hours'] = ua_schedule['time_gap'].dt.total_seconds() / 3600
+
+# 3. 결과 확인
+ua_schedule['time_gap']
+print(ua_schedule.head(10))
+
+# 4. 값 확인
+schedule_summary_ua = ua_schedule.groupby('tailnum')['gap_hours'].agg(['mean', 'min', 'count']).reset_index().sort_values('count',ascending=False)
+
+schedule_summary_ua['count'].describe()
+
+schedule_summary_ua.dropna()
+
+schedule_summary_ua.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
+
+top_planes_ua = schedule_summary_ua.sort_values('avg_gap_hr').head(10)
+
+plt.figure(figsize=(10, 5))
+sns.barplot(data=top_planes_ua, x='tailnum', y='avg_gap_hr')
+plt.xticks(rotation=45)
+plt.title('The 10 UA aircraft with the shortest average flight intervals')
+plt.xlabel('Tail Number')
+plt.ylabel('Average Gap (hours)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+##############
+
+
+# B6 항공사의 기체 회전율 비교
+
+
+# B6 항공사 중에서 tailnum, 출발 시간, 날짜 정보 추출
+b6_schedule = df_flights[df_flights['carrier'] == 'B6'][['tailnum', 'month_day_time']].dropna()
+
+# 1. datetime 형식으로 먼저 변환
+b6_schedule['month_day_time'] = pd.to_datetime(b6_schedule['month_day_time'])
+
+b6_schedule = b6_schedule.sort_values(['tailnum', 'month_day_time'])
+
+# 2. tailnum 기준으로 시간 차이(diff) 계산 후, 이를 time_gap 이라는 새로운 column으로 추가
+b6_schedule['time_gap'] = b6_schedule.groupby('tailnum')['month_day_time'].diff()
+
+# 값이 NaT인 경우, 
+# 앞쪽 값들 (NaT): 해당 tailnum 그룹에서 첫 비행 → 비교 대상 없음 → NaT
+
+# 간격을 시간(hour) 단위로 변경
+b6_schedule['gap_hours'] = b6_schedule['time_gap'].dt.total_seconds() / 3600
+
+# 3. 결과 확인
+b6_schedule['time_gap']
+print(b6_schedule.head(10))
+
+# 4. 값 확인
+schedule_summary_b6 = b6_schedule.groupby('tailnum')['gap_hours'].agg(['mean', 'min', 'count']).reset_index().sort_values('count',ascending=False)
+
+schedule_summary_b6['count'].describe()
+
+schedule_summary_b6.dropna()
+
+schedule_summary_b6.columns = ['tailnum', 'avg_gap_hr', 'min_gap_hr', 'flight_count']
+
+# 평균 비행 간격이 짧은 상위 10개 항공기 + 좌석수 보기
+top_planes_b6 = schedule_summary_b6.sort_values('avg_gap_hr').head(10)
+
+plt.figure(figsize=(10, 5))
+sns.barplot(data=top_planes_b6, x='tailnum', y='avg_gap_hr')
+plt.xticks(rotation=45)
+plt.title('The 10 B6 aircraft with the shortest average flight intervals')
+plt.xlabel('Tail Number')
+plt.ylabel('Average Gap (hours)')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
