@@ -1,0 +1,73 @@
+/*-- scss:defaults --*/
+
+// default colours
+
+// $theme-light-back: #ffffff00;
+// $theme-light-link: #9a3416;
+$theme-light-text: #d1d1d1;
+// $theme-dark-back: #1f2e32;
+// $theme-dark-link: #aae4e6;
+$theme-dark-text: #ffa202;
+
+
+// default theme colours
+// $body-bg: $theme-light-back;
+$body-color: $theme-light-text;
+// $link-color: $theme-light-link;
+
+// import fonts
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap');
+
+// $font-family-sans-serif: "Montserrat", sans-serif;
+// $presentation-heading-font: "Noto Serif", serif;
+$presentation-font-size-root: 27px;
+$presentation-line-height: 1.6;
+
+
+// /*-- scss:rules --*/
+
+// // dark theme variant
+
+// .dark-theme {
+//   color: $theme-dark-text;
+//   background-color: $theme-dark-back;
+  
+//   // header text
+  
+  h1, h2, h3 {
+    color: $theme-dark-text;
+    text-shadow: none !important;
+  }
+  
+//   // link text
+  
+//   a { 
+//     color: $theme-dark-link;
+//   }
+  
+//   // slide background
+  
+//   .slide-background-content {
+//     background-color: $theme-dark-back;
+//   }
+// }
+
+// // CSS class for highlighting light theme 
+
+// .highlighted-light {
+//   color: $theme-light-link;
+//   font-weight: bold;
+// }
+
+// //CSS class for highlighting dark theme
+
+// .highlighted-dark {
+//   color: $theme-dark-link;
+//   font-weight: bold;
+// }
+
+.title {
+  text-shadow: none !important;
+}

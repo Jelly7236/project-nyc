@@ -1,0 +1,17 @@
+project:
+  title: "project-nyc-slides"
+  type: default
+
+format: 
+    revealjs:
+        logo: ./images/LS-cap-Logo.png
+        theme: [blood, custom.scss]
+        reference-location: document
+        footer: "LS빅데이터스쿨5기"
+        code-fold: true
+        echo: true
+        # background-image: ./images/expressjet_airlines_cover.jfif
+        # background-opacity: "0.1"
+        # background-size: contain
+        # background-position: center
+
