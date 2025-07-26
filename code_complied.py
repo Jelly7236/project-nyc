@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import nycflights13 as flights
 import matplotlib.font_manager as fm
-
+# 한글폰트 캐시 초기화
 font_path = r"C:\Windows\Fonts\malgun.ttf"
 fm.fontManager.addfont(font_path)
 font_name = fm.FontProperties(fname=font_path).get_name()
-
+# 한글 폰트 설정
 plt.rcParams['font.family'] = font_name
 plt.rcParams['axes.unicode_minus'] = False
 
