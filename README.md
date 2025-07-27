@@ -79,7 +79,7 @@ flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 #### 🛫 노선 거리 분석
 - **EV**: 단거리(92.2%) 중심의 리저널 항공사
 - **UA/B6**: 중장거리 노선까지 다양하게 운영
-- <img width="989" height="590" alt="image" src="https://github.com/user-attachments/assets/b472104e-92e1-4f2d-950f-3a5992932d16" />
+- <img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/b472104e-92e1-4f2d-950f-3a5992932d16" />
 
 
 ### 3. 지연 원인 심층 분석
@@ -96,9 +96,9 @@ flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff()
 ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 ```
-<img width="990" height="490" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
+<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
 **UA와 비교**
-<img width="990" height="490" alt="image" src="https://github.com/user-attachments/assets/b1858068-b964-4a51-9120-8fe73e8f9ef9" />
+<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/b1858068-b964-4a51-9120-8fe73e8f9ef9" />
 
 **핵심 발견**: EV의 소형 항공기들이 상대적으로 **낮은 회전율**을 보임 > 특정 기체들만 반복적으로 비행을 반복함
 
@@ -121,7 +121,7 @@ plt.figure(figsize=(8,6))
 sns.barplot(data=summary_big3, x='carrier', y='delay_rate (%)', palette=bar_colors)
 plt.title('항공사별 출발 지연 비율(%)', fontsize=18, fontweight='bold')
 ```
-<img width="790" height="590" alt="image" src="https://github.com/user-attachments/assets/54580506-1e8a-457a-9f9b-0aeeb4b52085" />
+<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/54580506-1e8a-457a-9f9b-0aeeb4b52085" />
 
 
 ### 2. 월별 지연 패턴 분석
@@ -135,10 +135,10 @@ plt.title('항공사별 출발 지연 비율(%)', fontsize=18, fontweight='bold'
 plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%')
 ```
 **EV**
-<img width="689" height="692" alt="image" src="https://github.com/user-attachments/assets/948e8013-8259-428e-9ce7-961d39896af1" />
+<img width="600" height="600" alt="image" src="https://github.com/user-attachments/assets/948e8013-8259-428e-9ce7-961d39896af1" />
 
 **UA**
-<img width="689" height="692" alt="image" src="https://github.com/user-attachments/assets/b43c13d2-1525-40f3-a541-f8821c31adec" />
+<img width="600" height="600" alt="image" src="https://github.com/user-attachments/assets/b43c13d2-1525-40f3-a541-f8821c31adec" />
 
 
 ## 💡 결론 및 개선방안
