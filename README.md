@@ -79,7 +79,7 @@ flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 #### 🛫 노선 거리 분석
 - **EV**: 단거리(92.2%) 중심의 리저널 항공사
 - **UA/B6**: 중장거리 노선까지 다양하게 운영
-- <img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/b472104e-92e1-4f2d-950f-3a5992932d16" />
+- <img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/b472104e-92e1-4f2d-950f-3a5992932d16" />
 
 
 ### 3. 지연 원인 심층 분석
@@ -96,9 +96,11 @@ flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff()
 ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 ```
-<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
+
 **UA와 비교**
-<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/b1858068-b964-4a51-9120-8fe73e8f9ef9" />
+
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/b1858068-b964-4a51-9120-8fe73e8f9ef9" />
 
 **핵심 발견**: EV의 소형 항공기들이 상대적으로 **낮은 회전율**을 보임 > 특정 기체들만 반복적으로 비행을 반복함
 
@@ -106,10 +108,12 @@ ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 - **JFK 공항**: 평균 거리 1,222마일 (장거리 중심)
 - **LGA 공항**: 평균 거리 872마일 (단거리 중심)
   <img width="1390" height="489" alt="image" src="https://github.com/user-attachments/assets/48d9c4a2-ee51-47c6-978c-2938f2e06238" />
+
 JFK와 LGA 공항간의 명확한 차이 확인 가능
 
 - EV는 JFK에서 장거리 노선 운영 시 더 큰 지연 발생
-  <img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/e5fffe8d-4458-4900-ba8f-9da2b861c7cb" />
+  <img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/e5fffe8d-4458-4900-ba8f-9da2b861c7cb" />
+
   **유독 JFK에서 지연 시간이 평균적으로 가장 긴 것을 확인할 수 있음**
 
 
@@ -121,7 +125,7 @@ plt.figure(figsize=(8,6))
 sns.barplot(data=summary_big3, x='carrier', y='delay_rate (%)', palette=bar_colors)
 plt.title('항공사별 출발 지연 비율(%)', fontsize=18, fontweight='bold')
 ```
-<img width="600" height="290" alt="image" src="https://github.com/user-attachments/assets/54580506-1e8a-457a-9f9b-0aeeb4b52085" />
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/54580506-1e8a-457a-9f9b-0aeeb4b52085" />
 
 
 ### 2. 월별 지연 패턴 분석
