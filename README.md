@@ -31,6 +31,7 @@
 
 문서 작성 및 프로젝트 정리
 
+## 📁 데이터셋
 
 ```python
 # 주요 라이브러리
@@ -40,8 +41,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import nycflights13 as flights
 ```
-
-## 📁 데이터셋
 
 **nycflights13** 패키지의 2013년 뉴욕 항공편 데이터 활용
 - `flights`: 항공편 정보 (336,776건)
