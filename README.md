@@ -6,8 +6,8 @@
 
 ### 🎯 핵심 발견사항
 - **EV 항공사의 지연율이 41.2%**로 UA(29.8%), B6(39.0%)보다 현저히 높음
-- EV는 **소형 항공기 중심의 단거리 노선** 운영
-- **낮은 기체 회전율**과 **특정 공항의 장거리 노선 집중**이 주요 원인
+- EV는 **소형 항공기 중심의 단거리 노선** 운영 > 날씨의 영향을 더욱 예민하게 받음
+- **낮은 기체 회전율**과 **특정 공항에서 관제 우선 순위 밀리는 것**이 주요 원인
 
 ## 🛠 사용 기술 스택
 
@@ -37,6 +37,10 @@ import nycflights13 as flights
 
 ## 🔍 분석 프로세스
 
+### 0. 지연 기준 정의
+- 출발 지연과 도착 지연 중 출발 지연만 고려 ( 명확한 원인을 분석하기 위함 )
+- 15분 이상 지연된 경우만 실제 지연으로 분류류
+
 ### 1. 데이터 전처리
 ```python
 # 결측치 제거 및 데이터 정제
@@ -61,17 +65,26 @@ flights_delay = flights_cleaned[flights_cleaned['dep_delay']>=15]
 #### 🛫 노선 거리 분석
 - **EV**: 단거리(92.2%) 중심의 리저널 항공사
 - **UA/B6**: 중장거리 노선까지 다양하게 운영
+- <img width="989" height="590" alt="image" src="https://github.com/user-attachments/assets/b472104e-92e1-4f2d-950f-3a5992932d16" />
+
 
 ### 3. 지연 원인 심층 분석
 
 #### 🔄 기체 회전율 분석
+- 회전율 구한 방법
+  - 동일한 모델명으로 GROUPBY를 진행함
+  - DIFF() 함수를 사용하여 위아래 행들의 값에 대한 차를 구해줌
+  - time_gap이 시간 차이(Timedelta)이기 때문에 dt.total_seconds()를 사용하여 초 단위로 변환 후 3600으로 나누어 **시간 단위(float)**로 바꾸어줌
+    결과: gap_hours에는 **기체별 비행 간 간격(시간)**이 들어감.
+
 ```python
 # 기체별 평균 비행 간격 계산
 ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff()
 ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 ```
+<img width="990" height="490" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
 
-**핵심 발견**: EV의 소형 항공기들이 상대적으로 **낮은 회전율**을 보임
+**핵심 발견**: EV의 소형 항공기들이 상대적으로 **낮은 회전율**을 보임 > 특정 기체들만 반복적으로 비행을 반복함
 
 #### 🏢 공항별 특성 분석
 - **JFK 공항**: 평균 거리 1,222마일 (장거리 중심)
