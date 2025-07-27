@@ -83,13 +83,21 @@ ev_schedule['time_gap'] = ev_schedule.groupby('tailnum')['month_day_time'].diff(
 ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 ```
 <img width="990" height="490" alt="image" src="https://github.com/user-attachments/assets/ce5559f4-7e67-4a36-98b5-3a69494dfbfa" />
+**UA와 비교**
+<img width="990" height="490" alt="image" src="https://github.com/user-attachments/assets/b1858068-b964-4a51-9120-8fe73e8f9ef9" />
 
 **핵심 발견**: EV의 소형 항공기들이 상대적으로 **낮은 회전율**을 보임 > 특정 기체들만 반복적으로 비행을 반복함
 
 #### 🏢 공항별 특성 분석
 - **JFK 공항**: 평균 거리 1,222마일 (장거리 중심)
 - **LGA 공항**: 평균 거리 872마일 (단거리 중심)
+  <img width="1390" height="489" alt="image" src="https://github.com/user-attachments/assets/48d9c4a2-ee51-47c6-978c-2938f2e06238" />
+JFK와 LGA 공항간의 명확한 차이 확인 가능
+
 - EV는 JFK에서 장거리 노선 운영 시 더 큰 지연 발생
+  <img width="1189" height="690" alt="image" src="https://github.com/user-attachments/assets/e5fffe8d-4458-4900-ba8f-9da2b861c7cb" />
+  **유독 JFK에서 지연 시간이 평균적으로 가장 긴 것을 확인할 수 있음**
+
 
 ## 📊 주요 시각화
 
