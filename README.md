@@ -21,7 +21,7 @@
 - 팀 프로젝트
 - 팀원 5명
 - 협업 Tool
-<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/ffffa20a-b151-4d7e-a73a-bdb9170ca7d2" />
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/76682910-e2f7-42a1-a13c-00e5a5632839" />
 
 # 맡은 역할
 
