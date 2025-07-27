@@ -17,6 +17,21 @@
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-11557c?style=flat-square)
 ![Seaborn](https://img.shields.io/badge/Seaborn-3776AB?style=flat-square)
 
+## 협업 방식
+- 팀 프로젝트
+- 팀원 5명
+- 협업 Tool
+https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.flaticon.com%2Fkr%2Ffree-icon%2Fgithub-logo_25231&psig=AOvVaw1p1JKllGWyRIX4qqcC5XL2&ust=1753710934384000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCLji1rqY3Y4DFQAAAAAdAAAAABAE
+
+# 맡은 역할
+
+데이터 정제 및 분석
+
+시각화 및 인사이트 도출
+
+문서 작성 및 프로젝트 정리
+
+
 ```python
 # 주요 라이브러리
 import pandas as pd
@@ -107,16 +122,25 @@ plt.figure(figsize=(8,6))
 sns.barplot(data=summary_big3, x='carrier', y='delay_rate (%)', palette=bar_colors)
 plt.title('항공사별 출발 지연 비율(%)', fontsize=18, fontweight='bold')
 ```
+<img width="790" height="590" alt="image" src="https://github.com/user-attachments/assets/54580506-1e8a-457a-9f9b-0aeeb4b52085" />
+
 
 ### 2. 월별 지연 패턴 분석
-- 여름철(6-8월) 지연율 증가 패턴 확인
-- EV의 계절별 지연율 변동성이 가장 큼
+- EV의 경우 다른 항공사와 달리 여름철(1-6월) 지연율 증가 패턴 확인
+<img width="1389" height="790" alt="image" src="https://github.com/user-attachments/assets/85a531bf-d2a3-4ba3-a720-86a6ca94c4cd" />
+
 
 ### 3. 제조사별 항공기 특성
 ```python
 # 파이차트로 제조사 비율 시각화
 plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%')
 ```
+**EV**
+<img width="689" height="692" alt="image" src="https://github.com/user-attachments/assets/948e8013-8259-428e-9ce7-961d39896af1" />
+
+**UA**
+<img width="689" height="692" alt="image" src="https://github.com/user-attachments/assets/b43c13d2-1525-40f3-a541-f8821c31adec" />
+
 
 ## 💡 결론 및 개선방안
 
@@ -127,8 +151,8 @@ plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%')
 
 ### 🚀 개선 제안
 1. **기체 회전율 최적화**: 스케줄링 알고리즘 개선
-2. **공항별 차별화 전략**: JFK 장거리 vs LGA 단거리 특화
-3. **예측 모델 구축**: 지연 위험도 예측 시스템 도입
+2. **공항별 차별화 전략**: JFK 장거리 vs LGA 단거리 특화 >> LGA에 보다 많은 항공편 스케줄링
+3. **예측 모델 구축**: 지연 위험도 예측 시스템 도입 ( 1~6월 날씨를 타겟팅하여 해당 기간의 지연율을 집중적으로 낮춤 )
 
 ## 📈 프로젝트 성과
 
@@ -163,9 +187,3 @@ flight-delay-analysis/
 
 ---
 
-### 📞 연락처
-- **Email**: [your.email@domain.com]
-- **LinkedIn**: [LinkedIn Profile]
-- **Portfolio**: [Portfolio Website]
-
-> 이 프로젝트는 데이터 분석을 통한 비즈니스 문제 해결 능력을 보여주는 포트폴리오입니다.
