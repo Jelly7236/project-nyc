@@ -372,6 +372,7 @@ plane_features = (
 )
 print("▶ 항공사별 제조사 분포:")
 print(plane_features)
+
 # 항공사별 좌석수 평균 확인
 avg_seats = (
     big3.dropna(subset=['seats'])
