@@ -107,10 +107,10 @@ ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 #### 🏢 공항별 특성 분석
 - **JFK 공항**: 평균 거리 1,222마일 (장거리 중심)
 - **LGA 공항**: 평균 거리 872마일 (단거리 중심)
-  <img width="1390" height="489" alt="image" src="https://github.com/user-attachments/assets/48d9c4a2-ee51-47c6-978c-2938f2e06238" />
+- 
+<img width="1390" height="489" alt="image" src="https://github.com/user-attachments/assets/629e0b36-c430-45ea-a4b4-664e301d989c" />
 
-
-JFK와 LGA 공항간의 명확한 차이 확인 가능
+**JFK와 LGA 공항간의 명확한 차이 확인 가능**
 
 
 - EV는 JFK에서 장거리 노선 운영 시 더 큰 지연 발생
