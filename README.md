@@ -109,7 +109,7 @@ ev_schedule['gap_hours'] = ev_schedule['time_gap'].dt.total_seconds() / 3600
 JFK와 LGA 공항간의 명확한 차이 확인 가능
 
 - EV는 JFK에서 장거리 노선 운영 시 더 큰 지연 발생
-  <img width="1189" height="690" alt="image" src="https://github.com/user-attachments/assets/e5fffe8d-4458-4900-ba8f-9da2b861c7cb" />
+  <img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/e5fffe8d-4458-4900-ba8f-9da2b861c7cb" />
   **유독 JFK에서 지연 시간이 평균적으로 가장 긴 것을 확인할 수 있음**
 
 
