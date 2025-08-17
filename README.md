@@ -8,7 +8,7 @@
 - **EV 항공사의 지연율이 41.2%**로 UA(29.8%), B6(39.0%)보다 현저히 높음
 - EV는 **소형 항공기 중심의 단거리 노선** 운영 > 날씨의 영향을 더욱 예민하게 받음
 - **낮은 기체 회전율**과 **특정 공항에서 관제 우선 순위 밀리는 것**이 주요 원인
-
+  
 ## 🛠 사용 기술 스택
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
